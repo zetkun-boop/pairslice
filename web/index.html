@@ -458,34 +458,34 @@
 </div>
 
 <!-- ── Paywall modal ──────────────────────────────────────────── -->
-<!-- [9] Stars-based: 5⭐ one split, 50⭐ unlimited. No ads. -->
+<!-- [9] Stars-based: 75⭐ one split (~$0.99), 300⭐ unlimited (~$3.99). No ads. -->
 <div class="overlay" id="pwOverlay">
   <div class="pw-modal">
     <div class="modal-handle"></div>
     <div class="pw-head">
       <span class="ico">✂️</span>
       <h2>To split this image</h2>
-      <p id="pwSubtitle">You've used your 3 free splits</p>
+      <p id="pwSubtitle">You've used your free split</p>
     </div>
 
-    <!-- Consumable: 5 Stars = one split -->
+    <!-- Consumable: 75 Stars = one split (~$0.99) -->
     <div class="pw-card" id="buyOneCard" onclick="buyOne()">
       <div class="pw-ava">⭐</div>
       <div class="pw-info">
         <h3>One Split</h3>
         <p>Perfect for right now</p>
       </div>
-      <span class="pw-price">5 ⭐</span>
+      <span class="pw-price">75 ⭐</span>
     </div>
 
-    <!-- Non-consumable: 50 Stars = unlimited forever -->
+    <!-- Non-consumable: 300 Stars = unlimited forever (~$3.99) -->
     <div class="pw-card premium" id="buyUnlimitedCard" onclick="buyUnlimited()">
       <div class="pw-ava" style="background:#000">👑</div>
       <div class="pw-info">
         <h3>Unlimited Splits</h3>
         <p>Forever — no more paywalls</p>
       </div>
-      <span class="pw-price">50 ⭐</span>
+      <span class="pw-price">300 ⭐</span>
     </div>
   </div>
 </div>
@@ -529,7 +529,7 @@ if (isTelegram) {
 }
 
 // ── Runtime state ────────────────────────────────────────────────
-const FREE_LIMIT   = 3;
+const FREE_LIMIT   = 1;
 let splitsUsed     = parseInt(localStorage.getItem('ps_splits') || '0', 10);
 let isPremium      = false;   // server-authoritative in TMA; localStorage fallback on web
 let extraSplits    = 0;       // consumable credits from "single" purchases (server-side)
@@ -808,25 +808,24 @@ function buildResultPage() {
 
 // [13] iOS Telegram WebView fix for downloads
 function downloadCanvas(canvas, name) {
-  canvas.toBlob(blob => {
-    const url = URL.createObjectURL(blob);
+  // data: URL is self-contained — works in all Telegram WebView contexts.
+  // blob: URLs created in WebView are NOT accessible from external browsers
+  // (tg.openLink opens a separate browser context), so we use toDataURL.
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
-    if (isTelegram && tg.platform === 'ios') {
-      // iOS Telegram: <a download> doesn't trigger save dialog.
-      // openLink opens the blob URL in Safari → share sheet → Save to Photos.
-      tg.openLink(url);
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
-    } else {
-      // Android Telegram + desktop browsers: standard download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
-    }
-  }, 'image/jpeg', 0.95);
+  if (isTelegram) {
+    // iOS: opens in Telegram in-app browser → user taps Share → Save Image.
+    // Android: opens in Chrome → user taps Share / Download.
+    tg.openLink(dataUrl);
+  } else {
+    // Desktop browser: standard <a download> works fine.
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 }
 
 function downloadBoth() {

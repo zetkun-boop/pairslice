@@ -7,12 +7,12 @@ const PRODUCTS = {
   single: {
     title: 'One Split',
     description: 'Split one image in half — perfect for this moment',
-    stars: 5,
+    stars: 75,   // ~$0.99
   },
   unlimited: {
     title: 'Unlimited Splits',
     description: 'Unlimited image splits forever — no more paywalls, ever',
-    stars: 50,
+    stars: 300,  // ~$3.99
   },
 };
 
