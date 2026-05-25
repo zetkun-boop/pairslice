@@ -1,0 +1,84 @@
+name: PairSlice
+
+options:
+  bundleIdPrefix: com.pairslice
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: true
+  defaultConfig: Debug
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    ENABLE_PREVIEWS: YES
+    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+    SWIFT_STRICT_CONCURRENCY: complete
+
+targets:
+  PairSlice:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+
+    sources:
+      - path: Sources
+        createIntermediateGroups: true
+
+    resources:
+      - path: Info.plist
+
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: PairSlice
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        LSRequiresIPhoneOS: true
+        UIRequiresFullScreen: true
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UIViewControllerBasedStatusBarAppearance: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        GADApplicationIdentifier: ca-app-pub-3940256099942544~1458002511
+        NSUserTrackingUsageDescription: "We use your advertising identifier to show you relevant ads. This helps keep PairSlice free."
+        NSPhotoLibraryAddUsageDescription: "PairSlice saves your two split images to Photos so you can upload them to Threads."
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen: {}
+
+    entitlements:
+      path: PairSlice.entitlements
+      properties:
+        com.apple.developer.in-app-payments: []
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pairslice.app
+        INFOPLIST_FILE: Info.plist
+        SUPPORTS_MACCATALYST: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.9"
+        ENABLE_HARDENED_RUNTIME: YES
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+
+    dependencies:
+      - sdk: StoreKit.framework
+      - sdk: PhotosUI.framework
+      - sdk: Photos.framework
+      - sdk: AppTrackingTransparency.framework

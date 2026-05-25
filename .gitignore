@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Environment secrets — NEVER commit
+.env
+server/.env
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.xcworkspace/xcuserdata/
+
+# Build artifacts
+build/
+dist/
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,68 @@
+{
+  "identifier" : "PairSlice",
+  "nonConsumableProducts" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "68D1F3A0-0000-0000-0000-000000000001",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited image splits forever. No more ads — split as many images as you like.",
+          "displayName" : "PairSlice Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.pairslice.premium",
+      "referenceName" : "PairSlice Premium",
+      "type" : "NonConsumable"
+    }
+  ],
+  "consumableProducts" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "68D1F3A0-0000-0000-0000-000000000002",
+      "localizations" : [
+        {
+          "description" : "Purchase one image split. Use it anytime.",
+          "displayName" : "One Split",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.pairslice.split",
+      "referenceName" : "One Split",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      }
+    ]
+  },
+  "version" : {
+    "major" : 2,
+    "minor" : 0,
+    "patch" : 0
+  }
+}

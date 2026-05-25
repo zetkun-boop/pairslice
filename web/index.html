@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- [1] max-scale=1 prevents iOS zoom on input focus inside TMA -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>PairSlice — Split images for Threads</title>
+
+  <!-- [1] Telegram Mini App SDK — must be first script -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    /* ── Reset ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:           #000;
+      --surface:      rgba(255,255,255,.055);
+      --surface-h:    rgba(255,255,255,.09);
+      --border:       rgba(255,255,255,.10);
+      --border-s:     rgba(255,255,255,.20);
+      --text:         #fff;
+      --text-2:       rgba(255,255,255,.50);
+      --text-3:       rgba(255,255,255,.30);
+      --green:        #22c55e;
+      --r:            14px;
+      --r-sm:         10px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Sticky header ──────────────────────────────────── */
+    .hdr {
+      position: sticky; top: 0; z-index: 200;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+    }
+    .hdr-left { display: flex; flex-direction: column; gap: 2px; }
+    .hdr-logo { font-size: 20px; font-weight: 700; letter-spacing: -.5px; }
+    .hdr-tag  { font-size: 11px; color: var(--text-3); }
+    .ios-pill {
+      display: flex; align-items: center; gap: 5px;
+      background: #fff; color: #000;
+      font-size: 11px; font-weight: 700;
+      padding: 5px 11px; border-radius: 20px;
+      text-decoration: none; white-space: nowrap;
+    }
+
+    /* ── Pages ──────────────────────────────────────────── */
+    /* [3] Safe area bottom padding for TMA (notch, home indicator) */
+    .page {
+      display: none;
+      max-width: 480px; margin: 0 auto;
+      padding: 0 20px calc(60px + env(safe-area-inset-bottom, 0px));
+    }
+    .page.on { display: block; animation: fade .18s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(6px); } }
+
+    /* ── Home ───────────────────────────────────────────── */
+    .home-h { font-size: 28px; font-weight: 700; letter-spacing: -.5px; padding-top: 40px; }
+    .home-s { font-size: 15px; color: var(--text-3); margin-top: 6px; line-height: 1.55; }
+
+    /* Drop zone */
+    .dz {
+      position: relative;
+      border: 1.5px dashed var(--border-s);
+      border-radius: 18px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 52px 24px;
+      cursor: pointer; margin-top: 28px;
+      transition: border-color .15s, background .15s;
+      overflow: hidden;
+    }
+    .dz.over { border-color: #fff; background: var(--surface-h); }
+    .dz:hover { border-color: rgba(255,255,255,.4); background: var(--surface); }
+    .dz input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .dz-icon { font-size: 40px; opacity: .35; }
+    .dz-title { font-size: 16px; font-weight: 500; color: var(--text-2); }
+    .dz-hint  { font-size: 13px; color: var(--text-3); }
+
+    /* Action row */
+    .act-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .act-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); color: var(--text-2);
+      font-size: 14px; font-family: inherit; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .act-btn:hover { background: var(--surface-h); color: var(--text); }
+
+    /* Feature cards */
+    .feats { display: flex; gap: 8px; margin-top: 24px; }
+    .feat {
+      flex: 1; padding: 14px 8px; text-align: center;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    }
+    .feat-ico { font-size: 20px; margin-bottom: 6px; }
+    .feat-txt { font-size: 11px; color: var(--text-3); line-height: 1.4; }
+
+    /* ── Nav bar (inside pages) ──────────────────────────── */
+    .nav {
+      display: flex; align-items: center;
+      padding: 14px 0 6px; margin-bottom: 6px;
+    }
+    .nav-back {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; color: var(--text-2);
+      font-size: 16px; font-family: inherit; cursor: pointer; padding: 4px 0;
+    }
+    .nav-back:hover { color: var(--text); }
+    .nav-title {
+      flex: 1; text-align: center;
+      font-size: 17px; font-weight: 600;
+      transform: translateX(-30px);
+    }
+
+    /* ── Preview page ────────────────────────────────────── */
+    .prev-wrap {
+      position: relative; border-radius: var(--r); overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .prev-img { width: 100%; display: block; border-radius: var(--r); }
+    .split-line {
+      position: absolute; top: 0; bottom: 0; left: 50%;
+      width: 1.5px; background: rgba(255,255,255,.35);
+      transform: translateX(-50%); pointer-events: none;
+    }
+    .split-badge {
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,.65); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 6px; padding: 4px 9px;
+      font-size: 11px; white-space: nowrap;
+    }
+    .info-label {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 13px; color: var(--text-3); margin-bottom: 20px;
+    }
+
+    /* ── Result page ─────────────────────────────────────── */
+    .ok-banner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px; margin: 8px 0 20px;
+      background: rgba(34,197,94,.09);
+      border: 1px solid rgba(34,197,94,.22);
+      border-radius: var(--r-sm); font-size: 14px; color: var(--text-2);
+    }
+    .ok-ico { color: var(--green); font-size: 18px; }
+
+    .halves { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .half { display: flex; flex-direction: column; gap: 7px; }
+    .half-wrap { position: relative; border-radius: var(--r-sm); overflow: hidden; }
+    .half-img {
+      width: 100%; display: block;
+      border-radius: var(--r-sm); border: 1px solid var(--border);
+    }
+    .half-num {
+      position: absolute; top: 8px; left: 8px;
+      background: #fff; color: #000;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .half-lbl { font-size: 12px; color: var(--text-3); text-align: center; }
+
+    .guide {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 16px; margin-bottom: 20px;
+    }
+    .guide-h { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 12px; }
+    .g-step { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 9px; }
+    .g-step:last-child { margin-bottom: 0; }
+    .g-num {
+      flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(255,255,255,.14); color: #fff;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .g-txt { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+
+    /* Download buttons */
+    .dl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .dl-btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 13px 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); color: var(--text-2);
+      font-size: 13px; font-family: inherit; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .dl-btn:hover { background: var(--surface-h); color: var(--text); }
+
+    /* ── Shared buttons ──────────────────────────────────── */
+    .btn-primary {
+      width: 100%; padding: 16px;
+      background: #fff; color: #000; border: none; border-radius: var(--r);
+      font-size: 17px; font-weight: 600; font-family: inherit; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .88; }
+    .btn-primary:active { transform: scale(.99); }
+    .btn-primary:disabled { opacity: .4; cursor: default; }
+
+    .btn-sec {
+      width: 100%; padding: 14px;
+      background: transparent; color: var(--text-3);
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-size: 15px; font-family: inherit; cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .btn-sec:hover { color: var(--text); border-color: var(--border-s); }
+
+    /* ── URL modal ───────────────────────────────────────── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.82); z-index: 400;
+      align-items: flex-end; justify-content: center;
+    }
+    .overlay.on { display: flex; }
+    .modal {
+      background: #0f0f0f; border: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      width: 100%; max-width: 480px;
+      padding: 24px 24px 52px;
+    }
+    .modal-handle {
+      width: 36px; height: 4px; background: var(--border-s);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+    .modal-title { font-size: 17px; font-weight: 600; text-align: center; margin-bottom: 18px; }
+    .url-field {
+      width: 100%; padding: 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); color: #fff;
+      font-size: 14px; font-family: inherit; outline: none;
+    }
+    .url-field:focus { border-color: var(--border-s); }
+    .url-field::placeholder { color: var(--text-3); }
+    .modal-cancel {
+      background: none; border: none; color: var(--text-2);
+      font-size: 15px; font-family: inherit; cursor: pointer;
+      width: 100%; padding: 14px 0 0; text-align: center;
+    }
+
+    /* ── Loading overlay ─────────────────────────────────── */
+    .loader {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.72); z-index: 500;
+      align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+    }
+    .loader.on { display: flex; }
+    .spin {
+      width: 36px; height: 36px;
+      border: 2px solid rgba(255,255,255,.2); border-top-color: #fff;
+      border-radius: 50%; animation: sp .75s linear infinite;
+    }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    .load-txt { font-size: 14px; color: var(--text-2); }
+
+    /* ── Toast ───────────────────────────────────────────── */
+    .toast {
+      display: none; position: fixed;
+      bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      left: 50%; transform: translateX(-50%);
+      background: #1c1c1c; border: 1px solid var(--border);
+      border-radius: var(--r); padding: 13px 16px;
+      font-size: 14px; max-width: 380px;
+      width: calc(100% - 32px); z-index: 600;
+      align-items: flex-start; gap: 10px;
+    }
+    .toast.on { display: flex; animation: slide-up .25s ease; }
+    @keyframes slide-up { from { opacity:0; transform: translateX(-50%) translateY(12px); } }
+    .t-ico { color: #ef4444; flex-shrink: 0; margin-top: 1px; }
+    .t-msg { flex: 1; line-height: 1.4; }
+    .t-close {
+      background: none; border: none; color: var(--text-3);
+      font-size: 14px; cursor: pointer; flex-shrink: 0;
+    }
+
+    /* ── Paywall modal ───────────────────────────────────── */
+    /* [9] Stars-based paywall (no ads) */
+    .pw-modal {
+      background: #0d0d0d; border: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      width: 100%; max-width: 480px;
+      padding: 24px 24px calc(52px + env(safe-area-inset-bottom, 0px));
+    }
+    .pw-head { text-align: center; margin-bottom: 24px; }
+    .pw-head .ico { font-size: 28px; display: block; margin-bottom: 8px; }
+    .pw-head h2 { font-size: 20px; font-weight: 700; }
+    .pw-head p { font-size: 14px; color: var(--text-3); margin-top: 4px; }
+    .pw-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px; border-radius: var(--r);
+      background: var(--surface); border: 1px solid var(--border);
+      margin-bottom: 10px; cursor: pointer;
+      transition: background .15s;
+    }
+    .pw-card:hover { background: var(--surface-h); }
+    .pw-card.premium { background: #fff; border-color: #fff; }
+    .pw-card.premium:hover { background: rgba(255,255,255,.92); }
+    .pw-ava {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(255,255,255,.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .pw-card.premium .pw-ava { background: #000; }
+    .pw-info h3 { font-size: 16px; font-weight: 600; }
+    .pw-info p { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+    .pw-card.premium .pw-info h3 { color: #000; }
+    .pw-card.premium .pw-info p { color: rgba(0,0,0,.55); }
+    .pw-price {
+      font-size: 13px; font-weight: 700;
+      margin-left: auto; white-space: nowrap;
+      color: var(--text-2);
+    }
+    .pw-card.premium .pw-price {
+      color: rgba(0,0,0,.6);
+      background: rgba(0,0,0,.12); padding: 3px 8px; border-radius: 20px;
+    }
+
+    .free-counter {
+      text-align: center; font-size: 12px; color: var(--text-3); margin-bottom: 8px;
+    }
+    .free-counter span { color: var(--green); font-weight: 600; }
+  </style>
+
+  <!-- [2] Override CSS vars with Telegram theme synchronously (before paint) -->
+  <script>
+    (function () {
+      const tg = window.Telegram?.WebApp;
+      if (!tg) return;
+      const p = tg.themeParams;
+      const r = document.documentElement.style;
+      // Map Telegram theme params to our CSS variables
+      if (p.bg_color)            r.setProperty('--bg',      p.bg_color);
+      if (p.text_color)          r.setProperty('--text',    p.text_color);
+      if (p.hint_color)          r.setProperty('--text-2',  p.hint_color);
+      if (p.hint_color)          r.setProperty('--text-3',  p.hint_color + '99');
+      if (p.button_color)        r.setProperty('--green',   p.button_color);
+      if (p.secondary_bg_color)  r.setProperty('--surface', p.secondary_bg_color);
+      if (p.secondary_bg_color)  r.setProperty('--surface-h', p.secondary_bg_color);
+    })();
+  </script>
+</head>
+<body>
+
+<!-- ── Sticky header ─────────────────────────────────────────── -->
+<!-- [4] Hidden in TMA context via JS below; visible on direct web access -->
+<header class="hdr" id="mainHeader">
+  <div class="hdr-left">
+    <div class="hdr-logo">PairSlice</div>
+    <div class="hdr-tag">Split images for Threads</div>
+  </div>
+  <a class="ios-pill" href="#" id="iosLink">🍎 iOS App</a>
+</header>
+
+<!-- ── HOME PAGE ──────────────────────────────────────────────── -->
+<div class="page on" id="page-home">
+  <h1 class="home-h">Make your Threads scroll seamless</h1>
+  <p class="home-s">Upload any image and we'll split it exactly in half. Post both parts as a Threads carousel — viewers pinch to reveal the full picture.</p>
+
+  <div class="dz" id="dz">
+    <input type="file" id="fileInput" accept="image/*" />
+    <div class="dz-icon">🖼️</div>
+    <div class="dz-title">Drop image here</div>
+    <div class="dz-hint">or tap to choose from your device</div>
+  </div>
+
+  <div class="act-row">
+    <button class="act-btn" id="urlBtn">🔗 &nbsp;Paste URL</button>
+    <label class="act-btn" for="fileInput">📁 &nbsp;Browse files</label>
+  </div>
+
+  <div class="feats">
+    <div class="feat"><div class="feat-ico">✂️</div><div class="feat-txt">Pixel-perfect<br/>vertical split</div></div>
+    <div class="feat"><div class="feat-ico">🎯</div><div class="feat-txt">Exact midpoint<br/>guaranteed</div></div>
+    <div class="feat"><div class="feat-ico">⚡️</div><div class="feat-txt">Instant<br/>download</div></div>
+  </div>
+</div>
+
+<!-- ── PREVIEW PAGE ───────────────────────────────────────────── -->
+<div class="page" id="page-preview">
+  <div class="nav">
+    <button class="nav-back" onclick="goHome()">‹ &nbsp;Back</button>
+    <div class="nav-title">Preview</div>
+  </div>
+
+  <div class="prev-wrap" id="prevWrap">
+    <img id="prevImg" class="prev-img" src="" alt="Preview" />
+    <div class="split-line"></div>
+    <div class="split-badge">↔ split here</div>
+  </div>
+
+  <div class="info-label">✂️ &nbsp;Splits exactly at the vertical midpoint</div>
+
+  <div class="free-counter" id="freeCounter"></div>
+
+  <button class="btn-primary" id="splitBtn" onclick="doSplit()">
+    ✂️ &nbsp;Split Image
+  </button>
+</div>
+
+<!-- ── RESULT PAGE ────────────────────────────────────────────── -->
+<div class="page" id="page-result">
+  <div class="nav">
+    <button class="nav-back" onclick="goPreview()">‹ &nbsp;Back</button>
+    <div class="nav-title">Ready to Post</div>
+  </div>
+
+  <div class="ok-banner">
+    <span class="ok-ico">✅</span>
+    Image split at exact vertical midpoint
+  </div>
+
+  <div class="halves" id="halvesGrid"></div>
+
+  <div class="guide">
+    <div class="guide-h">How to use in Threads</div>
+    <div class="g-step"><div class="g-num">1</div><div class="g-txt">Download both images below</div></div>
+    <div class="g-step"><div class="g-num">2</div><div class="g-txt">In Threads, create a new post → add both photos in order (1st, then 2nd)</div></div>
+    <div class="g-step"><div class="g-num">3</div><div class="g-txt">Viewers swipe or pinch the carousel — images connect seamlessly ✨</div></div>
+  </div>
+
+  <div class="dl-row">
+    <button class="dl-btn" id="dl1">⬇ &nbsp;Left half</button>
+    <button class="dl-btn" id="dl2">⬇ &nbsp;Right half</button>
+  </div>
+
+  <button class="btn-primary" id="dlBoth" style="margin-bottom:10px">
+    ⬇ &nbsp;Download Both Images
+  </button>
+
+  <button class="btn-sec" onclick="goHome()">↩ &nbsp;Split Another Image</button>
+</div>
+
+<!-- ── URL modal ─────────────────────────────────────────────── -->
+<div class="overlay" id="urlOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Paste Image URL</div>
+    <input class="url-field" id="urlField" type="url"
+           placeholder="https://example.com/photo.jpg"
+           autocapitalize="none" autocorrect="off" spellcheck="false" />
+    <button class="btn-primary" style="margin-top:12px" onclick="loadFromURL()">Load Image</button>
+    <button class="modal-cancel" onclick="closeURL()">Cancel</button>
+  </div>
+</div>
+
+<!-- ── Paywall modal ──────────────────────────────────────────── -->
+<!-- [9] Stars-based: 5⭐ one split, 50⭐ unlimited. No ads. -->
+<div class="overlay" id="pwOverlay">
+  <div class="pw-modal">
+    <div class="modal-handle"></div>
+    <div class="pw-head">
+      <span class="ico">✂️</span>
+      <h2>To split this image</h2>
+      <p id="pwSubtitle">You've used your 3 free splits</p>
+    </div>
+
+    <!-- Consumable: 5 Stars = one split -->
+    <div class="pw-card" id="buyOneCard" onclick="buyOne()">
+      <div class="pw-ava">⭐</div>
+      <div class="pw-info">
+        <h3>One Split</h3>
+        <p>Perfect for right now</p>
+      </div>
+      <span class="pw-price">5 ⭐</span>
+    </div>
+
+    <!-- Non-consumable: 50 Stars = unlimited forever -->
+    <div class="pw-card premium" id="buyUnlimitedCard" onclick="buyUnlimited()">
+      <div class="pw-ava" style="background:#000">👑</div>
+      <div class="pw-info">
+        <h3>Unlimited Splits</h3>
+        <p>Forever — no more paywalls</p>
+      </div>
+      <span class="pw-price">50 ⭐</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Loading overlay ────────────────────────────────────────── -->
+<div class="loader" id="loader">
+  <div class="spin"></div>
+  <div class="load-txt" id="loadTxt">Loading…</div>
+</div>
+
+<!-- ── Toast ─────────────────────────────────────────────────── -->
+<div class="toast" id="toast">
+  <span class="t-ico">⚠️</span>
+  <span class="t-msg" id="toastMsg"></span>
+  <button class="t-close" onclick="hideToast()">✕</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  [5] TELEGRAM CONTEXT + STATE
+// ════════════════════════════════════════════════════════════════
+
+// ── Telegram Mini App SDK reference ─────────────────────────────
+const tg = window.Telegram?.WebApp;
+const isTelegram = !!(tg?.initData);
+
+// ── Backend URL ─────────────────────────────────────────────────
+// TODO: replace with your Railway domain after deployment
+// Example: 'https://pairslice-production.up.railway.app'
+const BACKEND = 'https://YOUR_RAILWAY_DOMAIN';
+
+// ── TMA initialisation ───────────────────────────────────────────
+let tgUserId = null;
+if (isTelegram) {
+  tg.ready();   // Tell Telegram the app has loaded (hides the loading spinner)
+  tg.expand();  // Expand to full screen
+  tgUserId = tg.initDataUnsafe?.user?.id ?? null;
+
+  // [4] Hide our custom header — TMA has its own title bar
+  document.getElementById('mainHeader').style.display = 'none';
+}
+
+// ── Runtime state ────────────────────────────────────────────────
+const FREE_LIMIT   = 3;
+let splitsUsed     = parseInt(localStorage.getItem('ps_splits') || '0', 10);
+let isPremium      = false;   // server-authoritative in TMA; localStorage fallback on web
+let extraSplits    = 0;       // consumable credits from "single" purchases (server-side)
+let pendingSplit   = false;   // true if user was blocked by paywall before payment
+let leftCanvas     = null;
+let rightCanvas    = null;
+let sourceDataURL  = null;
+let toastTimer     = null;
+
+// ════════════════════════════════════════════════════════════════
+//  [12] TELEGRAM BACK BUTTON
+// ════════════════════════════════════════════════════════════════
+function syncTgBackButton(pageId) {
+  if (!isTelegram) return;
+  if (pageId === 'page-home') {
+    tg.BackButton.hide();
+  } else {
+    tg.BackButton.show();
+  }
+}
+
+if (isTelegram) {
+  tg.BackButton.onClick(() => {
+    const current = document.querySelector('.page.on')?.id;
+    if (current === 'page-preview') goHome();
+    else if (current === 'page-result') goPreview();
+    else tg.BackButton.hide();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0, 0);
+  syncTgBackButton(id); // [12]
+}
+function goHome()    { show('page-home');    }
+function goPreview() { show('page-preview'); }
+function goResult()  { show('page-result');  }
+
+// ════════════════════════════════════════════════════════════════
+//  LOADING HELPERS
+// ════════════════════════════════════════════════════════════════
+function showLoader(msg = 'Loading…') {
+  document.getElementById('loadTxt').textContent = msg;
+  document.getElementById('loader').classList.add('on');
+}
+function hideLoader() {
+  document.getElementById('loader').classList.remove('on');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════════
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toast').classList.add('on');
+  toastTimer = setTimeout(hideToast, 5000);
+}
+function hideToast() {
+  document.getElementById('toast').classList.remove('on');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  [6] USER STATE — fetch from server on load
+// ════════════════════════════════════════════════════════════════
+async function initUserState() {
+  if (isTelegram && tgUserId) {
+    try {
+      const res  = await fetch(`${BACKEND}/user/status?userId=${tgUserId}`);
+      const data = await res.json();
+      isPremium   = !!data.isPremium;
+      extraSplits = data.extraSplits || 0;
+    } catch (e) {
+      console.warn('[pairslice] Could not fetch user status; assuming free tier');
+      // Graceful degradation: fall through to localStorage
+      isPremium  = localStorage.getItem('ps_premium') === '1';
+      splitsUsed = parseInt(localStorage.getItem('ps_splits') || '0', 10);
+    }
+  } else {
+    // Non-TMA (direct web access) — use localStorage as before
+    isPremium  = localStorage.getItem('ps_premium') === '1';
+    splitsUsed = parseInt(localStorage.getItem('ps_splits') || '0', 10);
+  }
+}
+document.addEventListener('DOMContentLoaded', initUserState);
+
+// ════════════════════════════════════════════════════════════════
+//  IMAGE LOADING
+// ════════════════════════════════════════════════════════════════
+async function loadImageFromFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('Please select a valid image file (JPG, PNG, HEIC, WebP, etc.)');
+    return;
+  }
+  showLoader('Loading image…');
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const canvas = document.createElement('canvas');
+    canvas.width  = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+    sourceDataURL = canvas.toDataURL('image/jpeg', 0.95);
+    bitmap.close();
+    showPreviewPage(sourceDataURL);
+  } catch (e) {
+    showToast('Could not load image: ' + (e.message || 'Unknown error'));
+  } finally {
+    hideLoader();
+  }
+}
+
+async function loadFromURL() {
+  const url = document.getElementById('urlField').value.trim();
+  if (!url) { showToast('Please enter a URL'); return; }
+  closeURL();
+  showLoader('Downloading image…');
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const blob = await resp.blob();
+    if (!blob.type.startsWith('image/'))
+      throw new Error('URL does not point to an image');
+    const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+    const canvas = document.createElement('canvas');
+    canvas.width  = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+    sourceDataURL = canvas.toDataURL('image/jpeg', 0.95);
+    bitmap.close();
+    showPreviewPage(sourceDataURL);
+  } catch (e) {
+    const msg = e.message.includes('Failed to fetch') || e.message.includes('NetworkError')
+      ? 'Could not load the image. The server may block cross-origin requests. Try downloading the image and dragging it here instead.'
+      : 'Error: ' + e.message;
+    showToast(msg);
+  } finally {
+    hideLoader();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PREVIEW PAGE
+// ════════════════════════════════════════════════════════════════
+function showPreviewPage(dataURL) {
+  document.getElementById('prevImg').src = dataURL;
+  updateFreeCounter();
+  show('page-preview');
+}
+
+// [11] Free counter — aware of server-side extraSplits
+function updateFreeCounter() {
+  const el = document.getElementById('freeCounter');
+  if (isPremium) {
+    el.innerHTML = '<span>✨ Premium — unlimited splits</span>';
+    el.style.color = 'rgba(255,255,255,.4)';
+  } else if (isTelegram && extraSplits > 0) {
+    el.innerHTML = `Paid splits available: <span>${extraSplits}</span>`;
+    el.style.color = '';
+  } else {
+    const left = Math.max(0, FREE_LIMIT - splitsUsed);
+    el.innerHTML = left > 0
+      ? `Free splits remaining: <span>${left} of ${FREE_LIMIT}</span>`
+      : `Free splits used up — unlock below`;
+    el.style.color = '';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  [7] SPLIT LOGIC — gate check
+// ════════════════════════════════════════════════════════════════
+async function doSplit() {
+  let blocked = false;
+
+  if (isTelegram) {
+    // Server-authoritative: premium OR paid credits bypass the gate
+    if (!isPremium && extraSplits <= 0 && splitsUsed >= FREE_LIMIT) {
+      blocked = true;
+    }
+  } else {
+    // Legacy localStorage gate
+    if (!isPremium && splitsUsed >= FREE_LIMIT) {
+      blocked = true;
+    }
+  }
+
+  if (blocked) {
+    pendingSplit = true;
+    openPaywall();
+    return;
+  }
+
+  await performSplit();
+}
+
+async function performSplit() {
+  showLoader('Splitting image…');
+  document.getElementById('splitBtn').disabled = true;
+
+  try {
+    const img = await loadImg(sourceDataURL);
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const halfW = Math.floor(w / 2);
+
+    leftCanvas = document.createElement('canvas');
+    leftCanvas.width  = halfW;
+    leftCanvas.height = h;
+    leftCanvas.getContext('2d').drawImage(img, 0, 0, halfW, h, 0, 0, halfW, h);
+
+    rightCanvas = document.createElement('canvas');
+    rightCanvas.width  = w - halfW;
+    rightCanvas.height = h;
+    rightCanvas.getContext('2d').drawImage(img, halfW, 0, w - halfW, h, 0, 0, w - halfW, h);
+
+    // [8] Track usage
+    if (!isPremium) {
+      if (isTelegram && extraSplits > 0) {
+        // Consume one paid credit locally
+        extraSplits = Math.max(0, extraSplits - 1);
+      } else {
+        // Free tier — increment local counter
+        splitsUsed++;
+        if (!isTelegram) localStorage.setItem('ps_splits', splitsUsed);
+      }
+    }
+
+    buildResultPage();
+    show('page-result');
+  } catch (e) {
+    showToast('Split failed: ' + e.message);
+  } finally {
+    hideLoader();
+    document.getElementById('splitBtn').disabled = false;
+  }
+}
+
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload  = () => res(img);
+    img.onerror = () => rej(new Error('Image could not be decoded'));
+    img.src = src;
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RESULT PAGE
+// ════════════════════════════════════════════════════════════════
+function buildResultPage() {
+  const grid = document.getElementById('halvesGrid');
+  grid.innerHTML = `
+    <div class="half">
+      <div class="half-wrap">
+        <img class="half-img" src="${leftCanvas.toDataURL('image/jpeg',.9)}" />
+        <div class="half-num">1</div>
+      </div>
+      <div class="half-lbl">Post 1st</div>
+    </div>
+    <div class="half">
+      <div class="half-wrap">
+        <img class="half-img" src="${rightCanvas.toDataURL('image/jpeg',.9)}" />
+        <div class="half-num">2</div>
+      </div>
+      <div class="half-lbl">Post 2nd</div>
+    </div>`;
+
+  document.getElementById('dl1').onclick    = () => downloadCanvas(leftCanvas,  'pairslice-1-post-first.jpg');
+  document.getElementById('dl2').onclick    = () => downloadCanvas(rightCanvas, 'pairslice-2-post-second.jpg');
+  document.getElementById('dlBoth').onclick = downloadBoth;
+}
+
+// [13] iOS Telegram WebView fix for downloads
+function downloadCanvas(canvas, name) {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+
+    if (isTelegram && tg.platform === 'ios') {
+      // iOS Telegram: <a download> doesn't trigger save dialog.
+      // openLink opens the blob URL in Safari → share sheet → Save to Photos.
+      tg.openLink(url);
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } else {
+      // Android Telegram + desktop browsers: standard download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    }
+  }, 'image/jpeg', 0.95);
+}
+
+function downloadBoth() {
+  downloadCanvas(leftCanvas,  'pairslice-1-post-first.jpg');
+  setTimeout(() => downloadCanvas(rightCanvas, 'pairslice-2-post-second.jpg'), 400);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  [9][10] PAYWALL — Stars payments
+// ════════════════════════════════════════════════════════════════
+function openPaywall() {
+  document.getElementById('pwOverlay').classList.add('on');
+}
+function closePaywall() {
+  document.getElementById('pwOverlay').classList.remove('on');
+}
+
+// 5 Stars → one split
+async function buyOne() {
+  closePaywall();
+  if (!isTelegram) {
+    showToast('Payments are available inside the Telegram bot. Open @PairSliceBot to use Stars.');
+    return;
+  }
+  await startPayment('single');
+}
+
+// 50 Stars → unlimited forever
+async function buyUnlimited() {
+  closePaywall();
+  if (!isTelegram) {
+    showToast('Payments are available inside the Telegram bot. Open @PairSliceBot to use Stars.');
+    return;
+  }
+  await startPayment('unlimited');
+}
+
+async function startPayment(productType) {
+  showLoader('Opening payment…');
+  try {
+    const res = await fetch(`${BACKEND}/create-invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData: tg.initData, productType }),
+    });
+
+    const data = await res.json();
+    hideLoader();
+
+    if (!data.invoiceUrl) {
+      showToast('Could not create invoice. Please try again.');
+      return;
+    }
+
+    // Opens the native Telegram Stars payment UI
+    tg.openInvoice(data.invoiceUrl, async (status) => {
+      if (status === 'paid') {
+        // Wait briefly for the webhook to update the store before re-fetching
+        await new Promise(r => setTimeout(r, 600));
+        await initUserState();
+        updateFreeCounter();
+
+        const msg = productType === 'unlimited'
+          ? '✨ Unlimited splits unlocked!'
+          : '⭐ One split credited!';
+        showToast(msg);
+
+        // Auto-complete the split that triggered the paywall
+        if (pendingSplit) {
+          pendingSplit = false;
+          await performSplit();
+        }
+      } else if (status === 'cancelled') {
+        pendingSplit = false;
+        // Silent — user chose to cancel
+      } else if (status === 'failed') {
+        pendingSplit = false;
+        showToast('Payment failed. Please try again.');
+      }
+    });
+  } catch (e) {
+    hideLoader();
+    showToast('Network error. Please try again.');
+    console.error('[payment] error:', e);
+  }
+}
+
+// Dev backdoor (browser console only)
+window.enablePremium = function () {
+  isPremium = true;
+  localStorage.setItem('ps_premium', '1');
+  updateFreeCounter();
+  console.log('Premium unlocked ✅');
+};
+
+// ════════════════════════════════════════════════════════════════
+//  URL MODAL
+// ════════════════════════════════════════════════════════════════
+function openURL()  {
+  document.getElementById('urlOverlay').classList.add('on');
+  document.getElementById('urlField').focus();
+}
+function closeURL() {
+  document.getElementById('urlOverlay').classList.remove('on');
+  document.getElementById('urlField').value = '';
+}
+document.getElementById('urlField').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loadFromURL();
+});
+
+// ════════════════════════════════════════════════════════════════
+//  DRAG & DROP
+// ════════════════════════════════════════════════════════════════
+const dz = document.getElementById('dz');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => { dz.classList.remove('over'); });
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadImageFromFile(file);
+});
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) loadImageFromFile(file);
+  e.target.value = '';
+});
+
+document.body.addEventListener('dragover', e => e.preventDefault());
+document.body.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) loadImageFromFile(file);
+});
+
+// ════════════════════════════════════════════════════════════════
+//  BUTTONS
+// ════════════════════════════════════════════════════════════════
+document.getElementById('urlBtn').addEventListener('click', openURL);
+
+document.getElementById('urlOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('urlOverlay')) closeURL();
+});
+document.getElementById('pwOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('pwOverlay')) closePaywall();
+});
+
+// iOS pill — show App Store or TMA hint
+document.getElementById('iosLink').addEventListener('click', e => {
+  e.preventDefault();
+  showToast('🍎 iOS app coming to the App Store soon!');
+});
+
+// Clipboard paste anywhere
+document.addEventListener('paste', async e => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) { await loadImageFromFile(file); return; }
+    }
+  }
+});
+</script>
+</body>
+</html>

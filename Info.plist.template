@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  TEMPLATE — Copy these keys into your Xcode-generated Info.plist   ║
+  ║  Replace ALL_CAPS placeholder values with your real IDs.           ║
+  ╚══════════════════════════════════════════════════════════════════════╝
+-->
+<plist version="1.0">
+<dict>
+
+    <!-- ── AdMob ─────────────────────────────────────────────────────── -->
+    <!-- Your AdMob App ID from https://admob.google.com                 -->
+    <!-- Format: ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX                  -->
+    <key>GADApplicationIdentifier</key>
+    <string>YOUR_ADMOB_APP_ID_HERE</string>
+
+    <!-- ── Tracking (ATT) ────────────────────────────────────────────── -->
+    <key>NSUserTrackingUsageDescription</key>
+    <string>We use your advertising identifier to show you relevant ads. This helps keep PairSlice free.</string>
+
+    <!-- ── Photo Library ─────────────────────────────────────────────── -->
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>PairSlice saves your two split images to Photos so you can upload them to Threads.</string>
+
+    <!-- ── App Transport Security (allow any HTTPS for image URLs) ───── -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+        <key>NSAllowsArbitraryLoadsInWebContent</key>
+        <false/>
+    </dict>
+
+    <!-- ── iPad full-screen (prevents broken layout in Split View) ───── -->
+    <key>UIRequiresFullScreen</key>
+    <true/>
+
+    <!-- ── Supported interface orientations (iPhone) ─────────────────── -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- ── Status bar ────────────────────────────────────────────────── -->
+    <key>UIStatusBarStyle</key>
+    <string>UIStatusBarStyleLightContent</string>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+
+</dict>
+</plist>
