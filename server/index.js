@@ -42,7 +42,7 @@ const bot = createBot(BOT_TOKEN, FRONTEND_URL);
 app.use(createWebhookRouter(bot));  // POST /webhook
 
 // ── Start ───────────────────────────────────────────────────
-app.listen(parseInt(PORT), async () => {
+app.listen(parseInt(PORT), '0.0.0.0', async () => {
   console.log(`✅ PairSlice server running on port ${PORT}`);
 
   // Register webhook with Telegram automatically on startup.
