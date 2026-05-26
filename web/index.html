@@ -208,37 +208,27 @@
     /* ── Full-screen image viewer (Telegram save workaround) ─ */
     #imgViewer {
       display: none; position: fixed; inset: 0; z-index: 900;
-      background: #000;
+      background: rgba(0,0,0,.96);
       flex-direction: column; align-items: center; justify-content: center;
-      padding: 16px; gap: 16px;
+      padding: 16px;
       touch-action: manipulation;
     }
     #imgViewer.on { display: flex; }
     #imgViewer .iv-hint {
-      font-size: 14px; color: rgba(255,255,255,.7);
-      text-align: center; line-height: 1.5;
-    }
-    #imgViewer .iv-hint strong { color: #fff; }
-    #imgViewer .iv-images {
-      display: flex; gap: 10px; width: 100%; justify-content: center;
-    }
-    #imgViewer .iv-item {
-      position: relative; flex: 1; max-width: 48%;
+      font-size: 13px; color: rgba(255,255,255,.6);
+      text-align: center; margin-bottom: 14px;
+      line-height: 1.5;
     }
     #imgViewer .iv-img {
-      width: 100%; border-radius: 12px; display: block;
-      object-fit: contain;
-    }
-    #imgViewer .iv-num {
-      position: absolute; top: 8px; left: 8px;
-      background: rgba(0,0,0,.55); color: #fff;
-      font-size: 12px; font-weight: 700;
-      padding: 2px 8px; border-radius: 20px;
+      max-width: 100%; max-height: 70vh;
+      border-radius: 12px; object-fit: contain;
+      -webkit-user-select: none; user-select: none;
     }
     #imgViewer .iv-close {
-      padding: 14px 40px;
-      background: #fff; border: none;
-      border-radius: 50px; color: #000; font-size: 16px; font-weight: 600;
+      margin-top: 20px;
+      padding: 12px 32px;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 50px; color: #fff; font-size: 15px;
       font-family: inherit; cursor: pointer;
     }
 
@@ -577,20 +567,11 @@
   </div>
 </div>
 
-<!-- ── Full-screen image viewer (long-press to save) ──────────── -->
+<!-- ── Full-screen image viewer (Telegram long-press save) ────── -->
 <div id="imgViewer">
-  <p class="iv-hint" id="ivHint">Hold each image →&nbsp;<strong>Save to Photos</strong></p>
-  <div class="iv-images">
-    <div class="iv-item">
-      <img class="iv-img" id="ivImg1" src="" alt="Post 1st" />
-      <span class="iv-num">1</span>
-    </div>
-    <div class="iv-item">
-      <img class="iv-img" id="ivImg2" src="" alt="Post 2nd" />
-      <span class="iv-num">2</span>
-    </div>
-  </div>
-  <button class="iv-close" onclick="closeImgViewer()">Done</button>
+  <p class="iv-hint" id="ivHint">Hold the image → <strong>Save to Photos</strong></p>
+  <img class="iv-img" id="ivImg" src="" alt="" />
+  <button class="iv-close" onclick="closeImgViewer()">Close</button>
 </div>
 
 <!-- ── Loading overlay ────────────────────────────────────────── -->
@@ -961,23 +942,40 @@ async function downloadBoth() {
   }
   consumeSave();
 
-  const url1 = leftCanvas.toDataURL('image/jpeg', 0.92);
-  const url2 = rightCanvas.toDataURL('image/jpeg', 0.92);
+  // Create both blobs synchronously before any await (preserves user gesture)
+  const blob1 = canvasToJpegBlob(leftCanvas);
+  const blob2 = canvasToJpegBlob(rightCanvas);
 
-  // Mobile Telegram (iOS & Android): full-screen viewer, long-press → Save to Photos
-  // Bypasses the system share sheet entirely.
+  // Share both files in one native sheet (one tap → both saved)
+  if (navigator.canShare) {
+    const files = [
+      new File([blob1], 'pairslice-1-post-first.jpg', { type: 'image/jpeg' }),
+      new File([blob2], 'pairslice-2-post-second.jpg', { type: 'image/jpeg' }),
+    ];
+    if (navigator.canShare({ files })) {
+      try {
+        await navigator.share({ files });
+        showToast('✅ Both images saved to Photos!');
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+  }
+
+  // Telegram fallback: show one at a time
   if (isTelegram) {
-    openBothImgViewer(url1, url2);
+    openImgViewer(leftCanvas.toDataURL('image/jpeg', 0.92));
+    showToast('Hold image → Save to Photos. Then tap ⬇ for the second one.');
     return;
   }
 
-  // Desktop browser: standard blob download
-  const blob1 = canvasToJpegBlob(leftCanvas);
-  const blob2 = canvasToJpegBlob(rightCanvas);
-  [{ blob: blob1, name: 'pairslice-1-post-first.jpg' },
-   { blob: blob2, name: 'pairslice-2-post-second.jpg' }].forEach(({ blob, name }, i) => {
+  // Desktop fallback: sequential downloads
+  const url1 = URL.createObjectURL(blob1);
+  const url2 = URL.createObjectURL(blob2);
+  [{ url: url1, name: 'pairslice-1-post-first.jpg' },
+   { url: url2, name: 'pairslice-2-post-second.jpg' }].forEach(({ url, name }, i) => {
     setTimeout(() => {
-      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = name;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -1052,32 +1050,17 @@ function closeShareSheet(e) {
 }
 
 function openImgViewer(dataUrl) {
-  // Single-image fallback (not used for downloadBoth anymore)
+  document.getElementById('ivImg').src = dataUrl;
   const isAndroid = isTelegram && tg.platform === 'android';
   document.getElementById('ivHint').innerHTML = isAndroid
     ? 'Hold the image → <strong>Save image</strong>'
     : 'Hold the image → <strong>Save to Photos</strong>';
-  document.getElementById('ivImg1').src = dataUrl;
-  document.getElementById('ivImg2').src = '';
-  document.getElementById('ivImg2').parentElement.style.display = 'none';
-  document.getElementById('imgViewer').classList.add('on');
-}
-
-function openBothImgViewer(url1, url2) {
-  const isAndroid = isTelegram && tg.platform === 'android';
-  document.getElementById('ivHint').innerHTML = isAndroid
-    ? 'Hold each image → <strong>Save image</strong>'
-    : 'Hold each image → <strong>Save to Photos</strong>';
-  document.getElementById('ivImg1').src = url1;
-  document.getElementById('ivImg2').src = url2;
-  document.getElementById('ivImg2').parentElement.style.display = '';
   document.getElementById('imgViewer').classList.add('on');
 }
 
 function closeImgViewer() {
   document.getElementById('imgViewer').classList.remove('on');
-  document.getElementById('ivImg1').src = '';
-  document.getElementById('ivImg2').src = '';
+  document.getElementById('ivImg').src = '';
 }
 
 // ════════════════════════════════════════════════════════════════
