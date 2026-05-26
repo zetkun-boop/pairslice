@@ -18,9 +18,9 @@ export function createBot(token, frontendUrl) {
     await ctx.reply(
       '👋 Welcome to *PairSlice*!\n\n' +
       'Split any image in half for a seamless Threads carousel.\n\n' +
-      '• 3 free splits to try\n' +
-      '• ⭐ 5 Stars = one more split\n' +
-      '• ⭐ 50 Stars = unlimited forever',
+      '• 1 free split to try\n' +
+      '• ⭐ 75 Stars = one more split (~$0.99)\n' +
+      '• ⭐ 300 Stars = unlimited forever (~$3.99)',
       { parse_mode: 'Markdown', reply_markup: kb }
     );
   });

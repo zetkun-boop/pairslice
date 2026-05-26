@@ -11,7 +11,7 @@ import invoiceRouter from './routes/invoice.js';
 import statusRouter from './routes/status.js';
 
 // ── Env validation ──────────────────────────────────────────
-const { BOT_TOKEN, FRONTEND_URL, PORT = '3000' } = process.env;
+const { BOT_TOKEN, FRONTEND_URL, PORT = '8080' } = process.env;
 
 if (!BOT_TOKEN)    throw new Error('BOT_TOKEN env var is required');
 if (!FRONTEND_URL) throw new Error('FRONTEND_URL env var is required');
