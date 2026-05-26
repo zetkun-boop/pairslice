@@ -841,32 +841,101 @@ function buildResultPage() {
 }
 
 // [13] Cross-platform download
-// - Telegram WebView (iOS/Android): tg.openLink doesn't support data:/blob: URLs.
-//   Solution: show full-screen image viewer — user holds image → Save to Photos.
-// - Desktop browser: standard <a download> with blob URL.
-function downloadCanvas(canvas, name) {
-  if (isTelegram) {
-    // Show full-screen viewer so user can long-press → Save to Photos
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-    openImgViewer(dataUrl);
-  } else {
-    // Desktop/browser: blob URL + <a download> is most reliable
-    canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }, 'image/jpeg', 0.92);
+// Strategy:
+//   1. Web Share API (navigator.share + files) — works in iOS/Android Telegram
+//      WebView and mobile Safari/Chrome → opens native Share Sheet →
+//      user taps "Save Image" → goes directly to Camera Roll / Gallery.
+//   2. Fallback (Telegram, no Web Share): full-screen imgViewer, long-press to save.
+//   3. Fallback (desktop browser): standard blob + <a download>.
+
+// Synchronously convert canvas → Blob (avoids async gap that can break user gesture)
+function canvasToJpegBlob(canvas) {
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  const [, b64] = dataUrl.split(',');
+  const bytes = atob(b64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: 'image/jpeg' });
+}
+
+async function downloadCanvas(canvas, name) {
+  const blob = canvasToJpegBlob(canvas); // synchronous → user gesture stays alive
+
+  // 1. Web Share API — iOS/Android native share sheet → Save to Photos ✓
+  if (navigator.canShare) {
+    const file = new File([blob], name, { type: 'image/jpeg' });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; // user cancelled intentionally
+        // Other error → fall through to next strategy
+      }
+    }
   }
+
+  // 2. Telegram with no Web Share (older app versions) → full-screen viewer
+  if (isTelegram) {
+    openImgViewer(canvas.toDataURL('image/jpeg', 0.92));
+    return;
+  }
+
+  // 3. Desktop browser → blob URL + <a download>
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+async function downloadBoth() {
+  // Create both blobs synchronously before any await (preserves user gesture)
+  const blob1 = canvasToJpegBlob(leftCanvas);
+  const blob2 = canvasToJpegBlob(rightCanvas);
+
+  // Share both files in one native sheet (one tap → both saved)
+  if (navigator.canShare) {
+    const files = [
+      new File([blob1], 'pairslice-1-post-first.jpg', { type: 'image/jpeg' }),
+      new File([blob2], 'pairslice-2-post-second.jpg', { type: 'image/jpeg' }),
+    ];
+    if (navigator.canShare({ files })) {
+      try {
+        await navigator.share({ files });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+  }
+
+  // Telegram fallback: show one at a time
+  if (isTelegram) {
+    openImgViewer(leftCanvas.toDataURL('image/jpeg', 0.92));
+    showToast('Save this image, then tap ⬇ Right half for the second one.');
+    return;
+  }
+
+  // Desktop fallback: sequential downloads
+  const url1 = URL.createObjectURL(blob1);
+  const url2 = URL.createObjectURL(blob2);
+  [{ url: url1, name: 'pairslice-1-post-first.jpg' },
+   { url: url2, name: 'pairslice-2-post-second.jpg' }].forEach(({ url, name }, i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }, i * 300);
+  });
 }
 
 function openImgViewer(dataUrl) {
   document.getElementById('ivImg').src = dataUrl;
-  // Hint differs by platform
   const isAndroid = isTelegram && tg.platform === 'android';
   document.getElementById('ivHint').innerHTML = isAndroid
     ? 'Hold the image → <strong>Save image</strong>'
@@ -876,13 +945,7 @@ function openImgViewer(dataUrl) {
 
 function closeImgViewer() {
   document.getElementById('imgViewer').classList.remove('on');
-  // Free memory
   document.getElementById('ivImg').src = '';
-}
-
-function downloadBoth() {
-  downloadCanvas(leftCanvas,  'pairslice-1-post-first.jpg');
-  setTimeout(() => downloadCanvas(rightCanvas, 'pairslice-2-post-second.jpg'), 400);
 }
 
 // ════════════════════════════════════════════════════════════════
