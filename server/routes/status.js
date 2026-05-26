@@ -17,8 +17,17 @@ router.get('/user/status', (req, res) => {
     return res.status(400).json({ error: 'invalid userId' });
   }
 
+  // Developer mode: owner gets unlimited access automatically
+  const ownerChatId = process.env.OWNER_CHAT_ID
+    ? parseInt(process.env.OWNER_CHAT_ID, 10)
+    : null;
+
+  if (ownerChatId && userId === ownerChatId) {
+    return res.json({ isPremium: true, extraSplits: 999, isDevMode: true });
+  }
+
   const u = getUser(userId);
-  res.json({ isPremium: u.isPremium, extraSplits: u.extraSplits });
+  res.json({ isPremium: u.isPremium, extraSplits: u.extraSplits, isDevMode: false });
 });
 
 export default router;
