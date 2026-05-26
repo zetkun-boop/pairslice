@@ -161,6 +161,17 @@
     .half-img {
       width: 100%; display: block;
       border-radius: var(--r-sm); border: 1px solid var(--border);
+      /* Prevent iOS long-press Save Image */
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      /* Blur to signal lower quality */
+      filter: blur(0.6px);
+    }
+    /* Transparent overlay catches all touch/mouse events → blocks copy/drag/long-press */
+    .half-wrap::after {
+      content: ''; position: absolute; inset: 0; z-index: 5;
+      -webkit-user-select: none; user-select: none;
     }
     .half-num {
       position: absolute; top: 8px; left: 8px;
@@ -840,19 +851,38 @@ function loadImg(src) {
 // ════════════════════════════════════════════════════════════════
 //  RESULT PAGE
 // ════════════════════════════════════════════════════════════════
+// Generate a degraded preview (small size + low quality) for display only.
+// Full-resolution canvases (leftCanvas, rightCanvas) are used for actual saving.
+function buildPreviewUrl(canvas) {
+  const MAX_W = 160; // small enough to be visibly degraded
+  const scale = Math.min(1, MAX_W / canvas.width);
+  const pw = Math.max(1, Math.floor(canvas.width  * scale));
+  const ph = Math.max(1, Math.floor(canvas.height * scale));
+  const tmp = document.createElement('canvas');
+  tmp.width  = pw;
+  tmp.height = ph;
+  tmp.getContext('2d').drawImage(canvas, 0, 0, pw, ph);
+  return tmp.toDataURL('image/jpeg', 0.18); // very low JPEG quality
+}
+
 function buildResultPage() {
+  const prev1 = buildPreviewUrl(leftCanvas);
+  const prev2 = buildPreviewUrl(rightCanvas);
+
   const grid = document.getElementById('halvesGrid');
   grid.innerHTML = `
     <div class="half">
       <div class="half-wrap">
-        <img class="half-img" src="${leftCanvas.toDataURL('image/jpeg',.9)}" />
+        <img class="half-img" src="${prev1}"
+             oncontextmenu="return false" ondragstart="return false" />
         <div class="half-num">1</div>
       </div>
       <div class="half-lbl">Post 1st</div>
     </div>
     <div class="half">
       <div class="half-wrap">
-        <img class="half-img" src="${rightCanvas.toDataURL('image/jpeg',.9)}" />
+        <img class="half-img" src="${prev2}"
+             oncontextmenu="return false" ondragstart="return false" />
         <div class="half-num">2</div>
       </div>
       <div class="half-lbl">Post 2nd</div>
