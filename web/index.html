@@ -374,6 +374,34 @@
       padding: 3px 7px; border-radius: 6px; letter-spacing: .5px;
       pointer-events: none;
     }
+
+    /* ── Share bottom sheet ───────────────────────────── */
+    .share-overlay {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,.5); align-items: flex-end;
+    }
+    .share-overlay.on { display: flex; }
+    .share-sheet {
+      width: 100%; background: var(--surface); border-radius: 20px 20px 0 0;
+      padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+    }
+    .share-handle {
+      width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 0 auto 16px;
+    }
+    .share-opt {
+      display: flex; align-items: center; gap: 14px;
+      width: 100%; padding: 15px 4px; background: none; border: none;
+      color: var(--text); font-size: 16px; text-align: left; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .share-opt:last-of-type { border-bottom: none; }
+    .share-opt-ico { font-size: 22px; width: 32px; text-align: center; }
+    .share-cancel {
+      display: block; width: 100%; margin-top: 8px; padding: 15px;
+      background: var(--bg); border: none; border-radius: var(--r);
+      color: var(--text-2); font-size: 16px; cursor: pointer;
+    }
   </style>
 
   <!-- [2] Override CSS vars with Telegram theme synchronously (before paint) -->
@@ -474,8 +502,21 @@
 
   <div class="dl-actions">
     <button class="dl-save-btn" id="dlBoth">⬇</button>
-    <button class="dl-icon-btn" id="dlCopy" title="Copy to clipboard">📋</button>
-    <button class="dl-icon-btn" id="dlShare" title="Share">•••</button>
+    <button class="dl-icon-btn" id="dlShare" title="More options">•••</button>
+  </div>
+
+  <!-- Share bottom sheet -->
+  <div class="share-overlay" id="shareOverlay" onclick="closeShareSheet(event)">
+    <div class="share-sheet">
+      <div class="share-handle"></div>
+      <button class="share-opt" id="shareNative">
+        <span class="share-opt-ico">📤</span>Share to other apps
+      </button>
+      <button class="share-opt" id="shareCopy">
+        <span class="share-opt-ico">📋</span>Copy to clipboard
+      </button>
+      <button class="share-cancel" onclick="closeShareSheet()">Cancel</button>
+    </div>
   </div>
 
   <button class="btn-sec" onclick="goHome()">↩ &nbsp;Split Another Image</button>
@@ -817,9 +858,10 @@ function buildResultPage() {
       <div class="half-lbl">Post 2nd</div>
     </div>`;
 
-  document.getElementById('dlBoth').onclick  = downloadBoth;
-  document.getElementById('dlCopy').onclick  = copyBothToClipboard;
-  document.getElementById('dlShare').onclick = shareImages;
+  document.getElementById('dlBoth').onclick    = downloadBoth;
+  document.getElementById('dlShare').onclick   = openShareSheet;
+  document.getElementById('shareNative').onclick = shareImages;
+  document.getElementById('shareCopy').onclick   = copyBothToClipboard;
 }
 
 // ── Save gate helpers ─────────────────────────────────────────
@@ -913,6 +955,7 @@ async function downloadBoth() {
     if (navigator.canShare({ files })) {
       try {
         await navigator.share({ files });
+        showToast('✅ Both images saved to Photos!');
         return;
       } catch (e) {
         if (e.name === 'AbortError') return;
@@ -923,7 +966,7 @@ async function downloadBoth() {
   // Telegram fallback: show one at a time
   if (isTelegram) {
     openImgViewer(leftCanvas.toDataURL('image/jpeg', 0.92));
-    showToast('Save this image, then tap ⬇ Right half for the second one.');
+    showToast('Hold image → Save to Photos. Then tap ⬇ for the second one.');
     return;
   }
 
@@ -939,10 +982,12 @@ async function downloadBoth() {
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     }, i * 300);
   });
+  showToast('✅ Both images downloaded!');
 }
 
 // Copy first image to clipboard (Clipboard API)
 async function copyBothToClipboard() {
+  closeShareSheet();
   if (!canSave()) {
     pendingSave = true;
     openPaywall();
@@ -969,6 +1014,7 @@ async function copyBothToClipboard() {
 
 // Share via native system share sheet (other apps)
 async function shareImages() {
+  closeShareSheet();
   if (!canSave()) {
     pendingSave = true;
     openPaywall();
@@ -991,6 +1037,16 @@ async function shareImages() {
   } else {
     showToast('Sharing not supported on this device');
   }
+}
+
+// ── Share bottom sheet ────────────────────────────────────────
+function openShareSheet() {
+  document.getElementById('shareOverlay').classList.add('on');
+}
+function closeShareSheet(e) {
+  // Close on backdrop tap or explicit call; ignore taps inside the sheet
+  if (e && e.target !== document.getElementById('shareOverlay')) return;
+  document.getElementById('shareOverlay').classList.remove('on');
 }
 
 function openImgViewer(dataUrl) {
