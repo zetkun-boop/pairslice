@@ -49,13 +49,12 @@ router.post('/create-invoice', async (req, res) => {
   const payload = JSON.stringify({ type: productType, uid: userId });
 
   // 4. Call Telegram Bot API — createInvoiceLink
-  // CRITICAL: currency must be 'XTR' and provider_token must be '' for Stars
+  // For Telegram Stars: currency='XTR', provider_token must be OMITTED entirely
   const apiBody = {
     title: product.title,
     description: product.description,
     payload,
     currency: 'XTR',           // ISO code for Telegram Stars
-    provider_token: '',         // Empty string required for Stars (not omitted)
     prices: [{ label: product.title, amount: product.stars }],
   };
 
