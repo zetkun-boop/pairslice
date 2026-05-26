@@ -39,6 +39,8 @@ export function createBot(token, frontendUrl) {
   bot.on('message:successful_payment', async (ctx) => {
     const payment = ctx.message.successful_payment;
     const userId = ctx.from.id;
+    const userName = ctx.from.first_name + (ctx.from.last_name ? ' ' + ctx.from.last_name : '');
+    const userHandle = ctx.from.username ? `@${ctx.from.username}` : `id${userId}`;
 
     let payload;
     try {
@@ -49,7 +51,6 @@ export function createBot(token, frontendUrl) {
     }
 
     if (!payload?.uid || payload.uid !== userId) {
-      // Payload uid mismatch — log and ignore (shouldn't happen in practice)
       console.warn('[bot] uid mismatch in payload', { payload, userId });
     }
 
@@ -69,6 +70,23 @@ export function createBot(token, frontendUrl) {
       );
     } else {
       console.warn('[bot] Unknown payload type:', payload.type);
+    }
+
+    // ── Notify owner ──────────────────────────────────────────
+    const ownerChatId = process.env.OWNER_CHAT_ID;
+    if (ownerChatId) {
+      const emoji  = payload.type === 'unlimited' ? '🎉' : '⭐';
+      const product = payload.type === 'unlimited' ? 'Unlimited (300 ⭐)' : 'One Split (75 ⭐)';
+      const text =
+        `${emoji} *Новая покупка!*\n\n` +
+        `👤 ${userName} (${userHandle})\n` +
+        `📦 ${product}\n` +
+        `💫 ${payment.total_amount} Stars`;
+      try {
+        await bot.api.sendMessage(ownerChatId, text, { parse_mode: 'Markdown' });
+      } catch (e) {
+        console.error('[bot] Failed to notify owner:', e.message);
+      }
     }
   });
 
