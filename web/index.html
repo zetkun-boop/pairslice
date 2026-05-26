@@ -437,8 +437,6 @@
 
   <div class="info-label">Splits exactly at the vertical midpoint</div>
 
-  <div class="free-counter" id="freeCounter"></div>
-
   <button class="btn-primary" id="splitBtn" onclick="doSplit()">
     ✂️ &nbsp;Split Image
   </button>
@@ -464,6 +462,8 @@
     <div class="g-step"><div class="g-num">2</div><div class="g-txt">In Threads, create a new post → add both photos in order (1st, then 2nd)</div></div>
     <div class="g-step"><div class="g-num">3</div><div class="g-txt">Viewers swipe or pinch the carousel — images connect seamlessly ✨</div></div>
   </div>
+
+  <div class="free-counter" id="freeCounter"></div>
 
   <div class="dl-actions">
     <button class="dl-save-btn" id="dlBoth">⬇</button>
@@ -569,7 +569,7 @@ const FREE_LIMIT   = 1;
 let splitsUsed     = parseInt(localStorage.getItem('ps_splits') || '0', 10);
 let isPremium      = false;   // server-authoritative in TMA; localStorage fallback on web
 let extraSplits    = 0;       // consumable credits from "single" purchases (server-side)
-let pendingSplit   = false;   // true if user was blocked by paywall before payment
+let pendingSave    = false;   // true if user was blocked by paywall when trying to save
 let leftCanvas     = null;
 let rightCanvas    = null;
 let sourceDataURL  = null;
@@ -720,20 +720,20 @@ function showPreviewPage(dataURL) {
   show('page-preview');
 }
 
-// [11] Free counter — aware of server-side extraSplits
+// [11] Free counter — shown on result page above save button
 function updateFreeCounter() {
   const el = document.getElementById('freeCounter');
   if (isPremium) {
-    el.innerHTML = '<span>✨ Premium — unlimited splits</span>';
+    el.innerHTML = '<span>✨ Unlimited saves</span>';
     el.style.color = 'rgba(255,255,255,.4)';
   } else if (isTelegram && extraSplits > 0) {
-    el.innerHTML = `Paid splits available: <span>${extraSplits}</span>`;
+    el.innerHTML = `Paid saves available: <span>${extraSplits}</span>`;
     el.style.color = '';
   } else {
     const left = Math.max(0, FREE_LIMIT - splitsUsed);
     el.innerHTML = left > 0
-      ? `Free splits remaining: <span>${left} of ${FREE_LIMIT}</span>`
-      : `Free splits used up — unlock below`;
+      ? `<span>${left} free save</span> remaining — tap ⬇ to use`
+      : '';   // empty: paywall will explain itself
     el.style.color = '';
   }
 }
@@ -742,26 +742,7 @@ function updateFreeCounter() {
 //  [7] SPLIT LOGIC — gate check
 // ════════════════════════════════════════════════════════════════
 async function doSplit() {
-  let blocked = false;
-
-  if (isTelegram) {
-    // Server-authoritative: premium OR paid credits bypass the gate
-    if (!isPremium && extraSplits <= 0 && splitsUsed >= FREE_LIMIT) {
-      blocked = true;
-    }
-  } else {
-    // Legacy localStorage gate
-    if (!isPremium && splitsUsed >= FREE_LIMIT) {
-      blocked = true;
-    }
-  }
-
-  if (blocked) {
-    pendingSplit = true;
-    openPaywall();
-    return;
-  }
-
+  // Split is always free — paywall only appears when user tries to save
   await performSplit();
 }
 
@@ -784,19 +765,6 @@ async function performSplit() {
     rightCanvas.width  = w - halfW;
     rightCanvas.height = h;
     rightCanvas.getContext('2d').drawImage(img, halfW, 0, w - halfW, h, 0, 0, w - halfW, h);
-
-    // [8] Track usage
-    if (!isPremium) {
-      if (isTelegram && extraSplits > 0) {
-        // Consume one paid credit locally
-        extraSplits = Math.max(0, extraSplits - 1);
-      } else {
-        // Free tier — increment counter and persist to localStorage.
-        // localStorage survives Mini App restarts (keyed by web app URL).
-        splitsUsed++;
-        localStorage.setItem('ps_splits', splitsUsed);
-      }
-    }
 
     buildResultPage();
     show('page-result');
@@ -841,6 +809,24 @@ function buildResultPage() {
   document.getElementById('dlBoth').onclick  = downloadBoth;
   document.getElementById('dlCopy').onclick  = copyBothToClipboard;
   document.getElementById('dlShare').onclick = shareImages;
+}
+
+// ── Save gate helpers ─────────────────────────────────────────
+function canSave() {
+  if (isPremium) return true;
+  if (isTelegram && extraSplits > 0) return true;
+  return splitsUsed < FREE_LIMIT;
+}
+
+function consumeSave() {
+  if (isPremium) return;
+  if (isTelegram && extraSplits > 0) {
+    extraSplits = Math.max(0, extraSplits - 1);
+  } else {
+    splitsUsed++;
+    localStorage.setItem('ps_splits', splitsUsed);
+  }
+  updateFreeCounter();
 }
 
 // [13] Cross-platform download
@@ -896,6 +882,13 @@ async function downloadCanvas(canvas, name) {
 }
 
 async function downloadBoth() {
+  if (!canSave()) {
+    pendingSave = true;
+    openPaywall();
+    return;
+  }
+  consumeSave();
+
   // Create both blobs synchronously before any await (preserves user gesture)
   const blob1 = canvasToJpegBlob(leftCanvas);
   const blob2 = canvasToJpegBlob(rightCanvas);
@@ -939,6 +932,13 @@ async function downloadBoth() {
 
 // Copy first image to clipboard (Clipboard API)
 async function copyBothToClipboard() {
+  if (!canSave()) {
+    pendingSave = true;
+    openPaywall();
+    return;
+  }
+  consumeSave();
+
   try {
     const blob = canvasToJpegBlob(leftCanvas);
     await navigator.clipboard.write([
@@ -958,6 +958,13 @@ async function copyBothToClipboard() {
 
 // Share via native system share sheet (other apps)
 async function shareImages() {
+  if (!canSave()) {
+    pendingSave = true;
+    openPaywall();
+    return;
+  }
+  consumeSave();
+
   const blob1 = canvasToJpegBlob(leftCanvas);
   const blob2 = canvasToJpegBlob(rightCanvas);
   const files = [
@@ -1049,16 +1056,16 @@ async function startPayment(productType) {
           : '⭐ One split credited!';
         showToast(msg);
 
-        // Auto-complete the split that triggered the paywall
-        if (pendingSplit) {
-          pendingSplit = false;
-          await performSplit();
+        // Auto-complete the save that triggered the paywall
+        if (pendingSave) {
+          pendingSave = false;
+          await downloadBoth();
         }
       } else if (status === 'cancelled') {
-        pendingSplit = false;
+        pendingSave = false;
         // Silent — user chose to cancel
       } else if (status === 'failed') {
-        pendingSplit = false;
+        pendingSave = false;
         showToast('Payment failed. Please try again.');
       }
     });
