@@ -75,18 +75,19 @@
       align-items: center; justify-content: center;
       gap: 12px; padding: 52px 24px;
       cursor: pointer; margin-top: 28px;
+      background: var(--bg);
       transition: border-color .15s, background .15s;
       overflow: hidden;
     }
-    .dz.over { border-color: #fff; background: var(--surface-h); }
-    .dz:hover { border-color: rgba(255,255,255,.4); background: var(--surface); }
+    .dz.over { border-color: #fff; background: var(--surface); }
+    .dz:hover { border-color: rgba(255,255,255,.4); }
     .dz input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .dz-icon { font-size: 40px; opacity: .35; }
+    .dz-icon { font-size: 40px; opacity: 0; }
     .dz-title { font-size: 16px; font-weight: 500; color: var(--text-2); }
     .dz-hint  { font-size: 13px; color: var(--text-3); }
 
     /* Action row */
-    .act-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .act-row { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
     .act-btn {
       display: flex; align-items: center; justify-content: center; gap: 8px;
       padding: 14px 10px;
@@ -101,7 +102,6 @@
     .feats { display: flex; gap: 8px; margin-top: 24px; }
     .feat {
       flex: 1; padding: 14px 8px; text-align: center;
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
     }
     .feat-ico { font-size: 20px; margin-bottom: 6px; }
     .feat-txt { font-size: 11px; color: var(--text-3); line-height: 1.4; }
@@ -114,7 +114,7 @@
     .nav-back {
       display: flex; align-items: center; gap: 4px;
       background: none; border: none; color: var(--text-2);
-      font-size: 16px; font-family: inherit; cursor: pointer; padding: 4px 0;
+      font-size: 32px; font-family: inherit; cursor: pointer; padding: 4px 0;
     }
     .nav-back:hover { color: var(--text); }
     .nav-title {
@@ -187,16 +187,23 @@
     .g-txt { font-size: 13px; color: var(--text-3); line-height: 1.5; }
 
     /* Download buttons */
-    .dl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .dl-btn {
-      display: flex; align-items: center; justify-content: center; gap: 7px;
-      padding: 13px 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r); color: var(--text-2);
-      font-size: 13px; font-family: inherit; cursor: pointer;
-      transition: background .15s, color .15s;
+    .dl-actions { display: flex; gap: 10px; margin-bottom: 10px; }
+    .dl-save-btn {
+      flex: 1; padding: 16px;
+      background: #fff; color: #000; border: none;
+      border-radius: var(--r); font-size: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity .15s;
     }
-    .dl-btn:hover { background: var(--surface-h); color: var(--text); }
+    .dl-save-btn:hover { opacity: .88; }
+    .dl-icon-btn {
+      width: 56px; height: 56px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); font-size: 20px; font-family: inherit; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .dl-icon-btn:hover { background: var(--surface-h); }
 
     /* ── Full-screen image viewer (Telegram save workaround) ─ */
     #imgViewer {
@@ -406,7 +413,6 @@
 
   <div class="act-row">
     <button class="act-btn" id="urlBtn">🔗 &nbsp;Paste URL</button>
-    <label class="act-btn" for="fileInput">📁 &nbsp;Browse files</label>
   </div>
 
   <div class="feats">
@@ -426,7 +432,7 @@
   <div class="prev-wrap" id="prevWrap">
     <img id="prevImg" class="prev-img" src="" alt="Preview" />
     <div class="split-line"></div>
-    <div class="split-badge">↔ split here</div>
+    <div class="split-badge">✂️ split line</div>
   </div>
 
   <div class="info-label">✂️ &nbsp;Splits exactly at the vertical midpoint</div>
@@ -459,14 +465,11 @@
     <div class="g-step"><div class="g-num">3</div><div class="g-txt">Viewers swipe or pinch the carousel — images connect seamlessly ✨</div></div>
   </div>
 
-  <div class="dl-row">
-    <button class="dl-btn" id="dl1">⬇ &nbsp;Left half</button>
-    <button class="dl-btn" id="dl2">⬇ &nbsp;Right half</button>
+  <div class="dl-actions">
+    <button class="dl-save-btn" id="dlBoth">⬇</button>
+    <button class="dl-icon-btn" id="dlCopy" title="Copy to clipboard">📋</button>
+    <button class="dl-icon-btn" id="dlShare" title="Share">•••</button>
   </div>
-
-  <button class="btn-primary" id="dlBoth" style="margin-bottom:10px">
-    ⬇ &nbsp;Download Both Images
-  </button>
 
   <button class="btn-sec" onclick="goHome()">↩ &nbsp;Split Another Image</button>
 </div>
@@ -491,8 +494,7 @@
     <div class="modal-handle"></div>
     <div class="pw-head">
       <span class="ico">✂️</span>
-      <h2>To split this image</h2>
-      <p id="pwSubtitle">You've used your free split</p>
+      <h2>No free splits left</h2>
     </div>
 
     <!-- Consumable: 75 Stars = one split (~$0.99) -->
@@ -836,9 +838,9 @@ function buildResultPage() {
       <div class="half-lbl">Post 2nd</div>
     </div>`;
 
-  document.getElementById('dl1').onclick    = () => downloadCanvas(leftCanvas,  'pairslice-1-post-first.jpg');
-  document.getElementById('dl2').onclick    = () => downloadCanvas(rightCanvas, 'pairslice-2-post-second.jpg');
-  document.getElementById('dlBoth').onclick = downloadBoth;
+  document.getElementById('dlBoth').onclick  = downloadBoth;
+  document.getElementById('dlCopy').onclick  = copyBothToClipboard;
+  document.getElementById('dlShare').onclick = shareImages;
 }
 
 // [13] Cross-platform download
@@ -933,6 +935,44 @@ async function downloadBoth() {
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     }, i * 300);
   });
+}
+
+// Copy first image to clipboard (Clipboard API)
+async function copyBothToClipboard() {
+  try {
+    const blob = canvasToJpegBlob(leftCanvas);
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/jpeg': blob })
+    ]);
+    showToast('Image 1 copied — repeat for image 2');
+  } catch (e) {
+    // Fallback: copy as data URL
+    try {
+      await navigator.clipboard.writeText(leftCanvas.toDataURL('image/jpeg', 0.92));
+      showToast('Image copied as URL');
+    } catch {
+      showToast('Copy not supported on this device');
+    }
+  }
+}
+
+// Share via native system share sheet (other apps)
+async function shareImages() {
+  const blob1 = canvasToJpegBlob(leftCanvas);
+  const blob2 = canvasToJpegBlob(rightCanvas);
+  const files = [
+    new File([blob1], 'pairslice-1-post-first.jpg', { type: 'image/jpeg' }),
+    new File([blob2], 'pairslice-2-post-second.jpg', { type: 'image/jpeg' }),
+  ];
+  if (navigator.canShare?.({ files })) {
+    try {
+      await navigator.share({ files });
+    } catch (e) {
+      if (e.name !== 'AbortError') showToast('Share failed');
+    }
+  } else {
+    showToast('Sharing not supported on this device');
+  }
 }
 
 function openImgViewer(dataUrl) {
