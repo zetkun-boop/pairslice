@@ -198,6 +198,33 @@
     }
     .dl-btn:hover { background: var(--surface-h); color: var(--text); }
 
+    /* ── Full-screen image viewer (Telegram save workaround) ─ */
+    #imgViewer {
+      display: none; position: fixed; inset: 0; z-index: 900;
+      background: rgba(0,0,0,.96);
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 16px;
+      touch-action: manipulation;
+    }
+    #imgViewer.on { display: flex; }
+    #imgViewer .iv-hint {
+      font-size: 13px; color: rgba(255,255,255,.6);
+      text-align: center; margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    #imgViewer .iv-img {
+      max-width: 100%; max-height: 70vh;
+      border-radius: 12px; object-fit: contain;
+      -webkit-user-select: none; user-select: none;
+    }
+    #imgViewer .iv-close {
+      margin-top: 20px;
+      padding: 12px 32px;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 50px; color: #fff; font-size: 15px;
+      font-family: inherit; cursor: pointer;
+    }
+
     /* ── Shared buttons ──────────────────────────────────── */
     .btn-primary {
       width: 100%; padding: 16px;
@@ -488,6 +515,13 @@
       <span class="pw-price">300 ⭐</span>
     </div>
   </div>
+</div>
+
+<!-- ── Full-screen image viewer (Telegram long-press save) ────── -->
+<div id="imgViewer">
+  <p class="iv-hint" id="ivHint">Hold the image → <strong>Save to Photos</strong></p>
+  <img class="iv-img" id="ivImg" src="" alt="" />
+  <button class="iv-close" onclick="closeImgViewer()">Close</button>
 </div>
 
 <!-- ── Loading overlay ────────────────────────────────────────── -->
@@ -806,26 +840,44 @@ function buildResultPage() {
   document.getElementById('dlBoth').onclick = downloadBoth;
 }
 
-// [13] iOS Telegram WebView fix for downloads
+// [13] Cross-platform download
+// - Telegram WebView (iOS/Android): tg.openLink doesn't support data:/blob: URLs.
+//   Solution: show full-screen image viewer — user holds image → Save to Photos.
+// - Desktop browser: standard <a download> with blob URL.
 function downloadCanvas(canvas, name) {
-  // data: URL is self-contained — works in all Telegram WebView contexts.
-  // blob: URLs created in WebView are NOT accessible from external browsers
-  // (tg.openLink opens a separate browser context), so we use toDataURL.
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-
   if (isTelegram) {
-    // iOS: opens in Telegram in-app browser → user taps Share → Save Image.
-    // Android: opens in Chrome → user taps Share / Download.
-    tg.openLink(dataUrl);
+    // Show full-screen viewer so user can long-press → Save to Photos
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    openImgViewer(dataUrl);
   } else {
-    // Desktop browser: standard <a download> works fine.
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Desktop/browser: blob URL + <a download> is most reliable
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }, 'image/jpeg', 0.92);
   }
+}
+
+function openImgViewer(dataUrl) {
+  document.getElementById('ivImg').src = dataUrl;
+  // Hint differs by platform
+  const isAndroid = isTelegram && tg.platform === 'android';
+  document.getElementById('ivHint').innerHTML = isAndroid
+    ? 'Hold the image → <strong>Save image</strong>'
+    : 'Hold the image → <strong>Save to Photos</strong>';
+  document.getElementById('imgViewer').classList.add('on');
+}
+
+function closeImgViewer() {
+  document.getElementById('imgViewer').classList.remove('on');
+  // Free memory
+  document.getElementById('ivImg').src = '';
 }
 
 function downloadBoth() {
