@@ -572,7 +572,7 @@ if (isTelegram) {
 }
 
 // ── Runtime state ────────────────────────────────────────────────
-const FREE_LIMIT   = 1;
+const FREE_LIMIT   = 3;
 let splitsUsed     = parseInt(localStorage.getItem('ps_splits') || '0', 10);
 let isPremium      = false;   // server-authoritative in TMA; localStorage fallback on web
 let extraSplits    = 0;       // consumable credits from "single" purchases (server-side)
@@ -652,7 +652,7 @@ async function initUserState() {
       isPremium   = !!data.isPremium;
       extraSplits = data.extraSplits || 0;
       isDevMode   = !!data.isDevMode;
-      if (isDevMode) showDevBadge();
+      if (isDevMode) _activateDevMode();
     } catch (e) {
       console.warn('[pairslice] Could not fetch user status; assuming free tier');
       // Graceful degradation: fall through to localStorage
@@ -741,8 +741,9 @@ function updateFreeCounter() {
     el.style.color = '';
   } else {
     const left = Math.max(0, FREE_LIMIT - splitsUsed);
+    const word = left === 1 ? 'free save' : 'free saves';
     el.innerHTML = left > 0
-      ? `<span>${left} free save</span> remaining — tap ⬇ to use`
+      ? `<span>${left} ${word} left</span> out of ${FREE_LIMIT}`
       : '';   // empty: paywall will explain itself
     el.style.color = '';
   }
@@ -1096,15 +1097,14 @@ function showDevBadge() {
   document.body.appendChild(el);
 }
 
-// Browser console backdoor (non-TMA testing)
-window.enablePremium = function () {
+// Dev backdoor — not exposed on window, only callable internally
+// Activated automatically when server returns isDevMode:true (OWNER_CHAT_ID match)
+function _activateDevMode() {
   isPremium = true;
   isDevMode = true;
-  localStorage.setItem('ps_premium', '1');
   updateFreeCounter();
   showDevBadge();
-  console.log('Dev mode unlocked ✅');
-};
+}
 
 // ════════════════════════════════════════════════════════════════
 //  URL MODAL
