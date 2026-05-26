@@ -20,13 +20,10 @@ if (!FRONTEND_URL) throw new Error('FRONTEND_URL env var is required');
 const app = express();
 app.use(express.json());
 
-// CORS — allow only the Vercel frontend to call the API
+// CORS — open to all origins (Mini App runs in Telegram WebView,
+// origin header may be null or vary; tightening can be done post-MVP)
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  // Allow exact match OR any *.vercel.app preview URL during development
-  if (origin === FRONTEND_URL || origin?.endsWith('.vercel.app')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(204);

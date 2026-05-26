@@ -789,9 +789,10 @@ async function performSplit() {
         // Consume one paid credit locally
         extraSplits = Math.max(0, extraSplits - 1);
       } else {
-        // Free tier — increment local counter
+        // Free tier — increment counter and persist to localStorage.
+        // localStorage survives Mini App restarts (keyed by web app URL).
         splitsUsed++;
-        if (!isTelegram) localStorage.setItem('ps_splits', splitsUsed);
+        localStorage.setItem('ps_splits', splitsUsed);
       }
     }
 
