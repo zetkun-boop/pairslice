@@ -503,7 +503,6 @@
 
   <div class="dl-actions">
     <button class="dl-save-btn" id="dlBoth"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M3 21h18"/></svg></button>
-    <button class="dl-icon-btn" id="dlShare" title="Copy to clipboard"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
   </div>
 
   <button class="btn-sec" onclick="goHome()">↩ &nbsp;Split Another Image</button>
@@ -595,7 +594,7 @@ if (isTelegram) {
   document.getElementById('mainHeader').style.display = 'none';
 
   // Show donation corner button
-  document.getElementById('donateCorner').style.display = '';
+  document.getElementById('donateCorner').style.display = 'block';
 }
 
 // ── Runtime state ────────────────────────────────────────────────
@@ -792,8 +791,7 @@ function buildResultPage() {
       <div class="half-lbl">Post 2nd</div>
     </div>`;
 
-  document.getElementById('dlBoth').onclick  = downloadBoth;
-  document.getElementById('dlShare').onclick = copyBothToClipboard;
+  document.getElementById('dlBoth').onclick = downloadBoth;
 }
 
 // [13] Cross-platform download
