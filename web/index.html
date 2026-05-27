@@ -160,16 +160,13 @@
       font-size: 11px; white-space: nowrap;
     }
     .prev-rotate {
-      position: absolute; top: 10px; right: 10px; z-index: 10;
-      background: rgba(0,0,0,.42);
-      border: none; border-radius: 10px; padding: 9px;
-      color: #fff; cursor: pointer;
+      position: absolute; top: 8px; right: 8px; z-index: 10;
+      background: none; border: none; padding: 6px;
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,.38);
-      transition: background .15s, transform .1s;
+      transition: transform .1s;
     }
-    .prev-rotate:hover  { background: rgba(0,0,0,.60); }
-    .prev-rotate:active { transform: scale(.90); }
+    .prev-rotate:active { transform: scale(.88); }
     .info-label {
       display: flex; align-items: center; justify-content: center; gap: 6px;
       font-size: 13px; color: var(--text-3); margin-bottom: 20px;
@@ -470,10 +467,22 @@
     <div class="split-line"></div>
     <div class="split-badge">split line</div>
     <button class="prev-rotate" onclick="rotateImage()" title="Rotate left">
-      <!-- CCW circular-arrow icon matching reference: 270° arc + downward arrowhead -->
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 16A9 9 0 1 0 8 20"/>
-        <polyline points="4 17 8 22 12 17"/>
+      <!-- CCW circular arrow: gradient black→white, drop-shadow for visibility -->
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
+           stroke-linecap="round" stroke-linejoin="round"
+           style="filter:drop-shadow(0 0 3px rgba(0,0,0,.8)) drop-shadow(0 1px 5px rgba(0,0,0,.55))">
+        <defs>
+          <!-- Gradient: black at tail (open end ~4 o'clock), white at arrowhead (~7 o'clock) -->
+          <linearGradient id="rotGrad" gradientUnits="userSpaceOnUse"
+                          x1="20" y1="16" x2="8" y2="20">
+            <stop offset="0%"   stop-color="#000"/>
+            <stop offset="100%" stop-color="#fff"/>
+          </linearGradient>
+        </defs>
+        <!-- 270° CCW arc from ~4 o'clock to ~7 o'clock -->
+        <path d="M20 16A9 9 0 1 0 8 20" stroke="url(#rotGrad)" stroke-width="3"/>
+        <!-- Filled arrowhead at end, pointing down -->
+        <polygon points="4,17 8,22.5 12,17" fill="url(#rotGrad)" stroke="none"/>
       </svg>
     </button>
   </div>
