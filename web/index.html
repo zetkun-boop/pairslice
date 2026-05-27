@@ -98,7 +98,7 @@
       overflow: hidden;
     }
     .dz.over { border-color: #fff; background: var(--surface); }
-    .dz:hover { border-color: rgba(255,255,255,.4); }
+    .dz:hover { border-color: var(--border-s); }
     .dz input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     .dz-icon { font-size: 40px; }
     .dz-title { font-size: 16px; font-weight: 500; color: var(--text-2); }
@@ -207,16 +207,8 @@
 
     /* Download buttons */
     .dl-actions { display: flex; gap: 10px; margin-bottom: 10px; }
-    .dl-save-btn { flex: 1; padding: 16px; background: var(--accent); color: var(--accent-text); border: none; border-radius: var(--r); font-size: 22px; cursor: pointer; transition: opacity .15s; }
+    .dl-save-btn { flex: 1; padding: 16px; background: var(--accent); color: var(--accent-text); border: none; border-radius: var(--r); font-size: 22px; cursor: pointer; transition: opacity .15s; display: flex; align-items: center; justify-content: center; }
     .dl-save-btn:active { opacity: .8; }
-    .dl-icon-btn {
-      width: 56px; height: 56px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r); font-size: 20px; font-family: inherit; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background .15s;
-    }
-    .dl-icon-btn:hover { background: var(--surface-h); }
 
     /* ── Full-screen image viewer (Telegram save workaround) ─ */
     #imgViewer {
@@ -274,7 +266,7 @@
     }
     .overlay.on { display: flex; }
     .modal {
-      background: #0f0f0f; border: 1px solid var(--border);
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: 20px 20px 0 0;
       width: 100%; max-width: 480px;
       padding: 24px 24px 52px;
@@ -286,8 +278,8 @@
     .modal-title { font-size: 17px; font-weight: 600; text-align: center; margin-bottom: 18px; }
     .url-field {
       width: 100%; padding: 14px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r-sm); color: #fff;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); color: var(--text);
       font-size: 14px; font-family: inherit; outline: none;
     }
     .url-field:focus { border-color: var(--border-s); }
@@ -318,7 +310,7 @@
       display: none; position: fixed;
       bottom: calc(28px + env(safe-area-inset-bottom, 0px));
       left: 50%; transform: translateX(-50%);
-      background: #1c1c1c; border: 1px solid var(--border);
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--r); padding: 13px 16px;
       font-size: 14px; max-width: 380px;
       width: calc(100% - 32px); z-index: 600;
@@ -326,7 +318,7 @@
     }
     .toast.on { display: flex; animation: slide-up .25s ease; }
     @keyframes slide-up { from { opacity:0; transform: translateX(-50%) translateY(12px); } }
-    .t-ico { color: #ef4444; flex-shrink: 0; margin-top: 1px; }
+    .t-ico { color: var(--text-3); flex-shrink: 0; margin-top: 1px; }
     .t-msg { flex: 1; line-height: 1.4; }
     .t-close {
       background: none; border: none; color: var(--text-3);
@@ -509,7 +501,7 @@
 </div>
 
 <!-- ── Donation corner button (fixed, only in Telegram) ──────── -->
-<button class="donate-corner" id="donateCorner" onclick="openDonateSheet()">♥ Donation</button>
+<button class="donate-corner" id="donateCorner" onclick="openDonateSheet()">⭐ Donation</button>
 
 <!-- ── Donation amount sheet ─────────────────────────────────── -->
 <div class="donate-overlay" id="donateOverlay" onclick="closeDonateSheet(event)">
@@ -519,7 +511,7 @@
     <div class="donate-sub">Поддержи автора ❤️</div>
     <div class="donate-amount-row">
       <span class="donate-stars-display" id="donateAmountDisplay">50</span>
-      <span class="donate-star-ico">★</span>
+      <span class="donate-star-ico">⭐</span>
     </div>
     <input type="range" class="donate-slider" id="donateSlider"
            min="10" max="500" step="10" value="50"
@@ -564,7 +556,7 @@
 
 <!-- ── Toast ─────────────────────────────────────────────────── -->
 <div class="toast" id="toast">
-  <span class="t-ico">⚠️</span>
+  <span class="t-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
   <span class="t-msg" id="toastMsg"></span>
   <button class="t-close" onclick="hideToast()">✕</button>
 </div>
@@ -727,7 +719,6 @@ function showPreviewPage(dataURL) {
 //  [7] SPLIT LOGIC — gate check
 // ════════════════════════════════════════════════════════════════
 async function doSplit() {
-  // Split is always free — paywall only appears when user tries to save
   await performSplit();
 }
 
@@ -794,15 +785,13 @@ function buildResultPage() {
   document.getElementById('dlBoth').onclick = downloadBoth;
 }
 
-// [13] Cross-platform download
-// Strategy:
-//   1. Web Share API (navigator.share + files) — works in iOS/Android Telegram
-//      WebView and mobile Safari/Chrome → opens native Share Sheet →
-//      user taps "Save Image" → goes directly to Camera Roll / Gallery.
+// Download strategy:
+//   1. Web Share API (navigator.share + files) — iOS/Android native Share Sheet
+//      → user taps "Save Image" → goes to Camera Roll / Gallery.
 //   2. Fallback (Telegram, no Web Share): full-screen imgViewer, long-press to save.
 //   3. Fallback (desktop browser): standard blob + <a download>.
 
-// Synchronously convert canvas → Blob (avoids async gap that can break user gesture)
+// Synchronously convert canvas → Blob (keeps user gesture alive across the await)
 function canvasToJpegBlob(canvas) {
   const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
   const [, b64] = dataUrl.split(',');
@@ -810,40 +799,6 @@ function canvasToJpegBlob(canvas) {
   const arr = new Uint8Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
   return new Blob([arr], { type: 'image/jpeg' });
-}
-
-async function downloadCanvas(canvas, name) {
-  const blob = canvasToJpegBlob(canvas); // synchronous → user gesture stays alive
-
-  // 1. Web Share API — iOS/Android native share sheet → Save to Photos ✓
-  if (navigator.canShare) {
-    const file = new File([blob], name, { type: 'image/jpeg' });
-    if (navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file] });
-        return;
-      } catch (e) {
-        if (e.name === 'AbortError') return; // user cancelled intentionally
-        // Other error → fall through to next strategy
-      }
-    }
-  }
-
-  // 2. Telegram with no Web Share (older app versions) → full-screen viewer
-  if (isTelegram) {
-    openImgViewer(canvas.toDataURL('image/jpeg', 0.92));
-    return;
-  }
-
-  // 3. Desktop browser → blob URL + <a download>
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 async function downloadBoth() {
@@ -888,24 +843,6 @@ async function downloadBoth() {
     }, i * 300);
   });
   showToast('✅ Both images downloaded!');
-}
-
-// Copy first image to clipboard (Clipboard API)
-async function copyBothToClipboard() {
-  try {
-    const blob = canvasToJpegBlob(leftCanvas);
-    await navigator.clipboard.write([
-      new ClipboardItem({ 'image/jpeg': blob })
-    ]);
-    showToast('Image 1 copied — repeat for image 2');
-  } catch (e) {
-    try {
-      await navigator.clipboard.writeText(leftCanvas.toDataURL('image/jpeg', 0.92));
-      showToast('Image copied as URL');
-    } catch {
-      showToast('Copy not supported on this device');
-    }
-  }
 }
 
 function openImgViewer(dataUrl) {
