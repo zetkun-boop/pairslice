@@ -121,7 +121,7 @@
     .feat {
       flex: 1; padding: 14px 8px; text-align: center;
     }
-    .feat-ico { font-size: 20px; margin-bottom: 6px; }
+    .feat-ico { font-size: 20px; margin-bottom: 6px; color: var(--text-2); }
     .feat-txt { font-size: 11px; color: var(--text-3); line-height: 1.4; }
 
     /* ── Nav bar (inside pages) ──────────────────────────── */
@@ -333,42 +333,69 @@
       font-size: 14px; cursor: pointer; flex-shrink: 0;
     }
 
-    .donate-btn {
-      display: block; width: 100%; padding: 14px; margin-top: 10px;
-      background: none; border: 1px solid var(--border);
-      border-radius: var(--r); color: var(--text-3);
-      font-size: 14px; font-family: inherit; cursor: pointer;
-      transition: color .15s, border-color .15s;
+    /* ── Donate corner button ────────────────────────────── */
+    .donate-corner {
+      display: none;
+      position: fixed; top: 14px; right: 16px; z-index: 150;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 8px 14px;
+      color: var(--text-2); font-size: 13px; font-weight: 500;
+      font-family: inherit; cursor: pointer;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
     }
-    .donate-btn:hover { color: var(--text-2); border-color: var(--border-s); }
+    .donate-corner:hover { background: var(--surface-h); color: var(--text); }
 
-    /* ── Share bottom sheet ───────────────────────────── */
-    .share-overlay {
-      display: none; position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,.5); align-items: flex-end;
+    /* ── Donation amount sheet ────────────────────────────── */
+    .donate-overlay {
+      display: none; position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,0,.65); align-items: flex-end; justify-content: center;
     }
-    .share-overlay.on { display: flex; }
-    .share-sheet {
-      width: 100%; background: var(--surface); border-radius: 20px 20px 0 0;
-      padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+    .donate-overlay.on { display: flex; }
+    .donate-sheet {
+      width: 100%; max-width: 480px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 12px 24px calc(32px + env(safe-area-inset-bottom, 0px));
     }
-    .share-handle {
-      width: 36px; height: 4px; background: var(--border);
-      border-radius: 2px; margin: 0 auto 16px;
+    .donate-handle {
+      width: 36px; height: 4px; background: var(--border-s);
+      border-radius: 2px; margin: 0 auto 20px;
     }
-    .share-opt {
-      display: flex; align-items: center; gap: 14px;
-      width: 100%; padding: 15px 4px; background: none; border: none;
-      color: var(--text); font-size: 16px; text-align: left; cursor: pointer;
-      border-bottom: 1px solid var(--border);
+    .donate-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .donate-sub { font-size: 14px; color: var(--text-2); margin-bottom: 28px; }
+    .donate-amount-row {
+      display: flex; align-items: baseline; justify-content: center;
+      gap: 6px; margin-bottom: 18px;
     }
-    .share-opt:last-of-type { border-bottom: none; }
-    .share-opt-ico { font-size: 22px; width: 32px; text-align: center; }
-    .share-cancel {
-      display: block; width: 100%; margin-top: 8px; padding: 15px;
-      background: var(--bg); border: none; border-radius: var(--r);
-      color: var(--text-2); font-size: 16px; cursor: pointer;
+    .donate-stars-display { font-size: 36px; font-weight: 700; }
+    .donate-star-ico { font-size: 24px; color: var(--text-2); }
+    .donate-slider {
+      width: 100%; margin-bottom: 16px;
+      -webkit-appearance: none; appearance: none;
+      height: 4px; border-radius: 2px;
+      background: var(--border-s); outline: none; cursor: pointer;
     }
+    .donate-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer;
+    }
+    .donate-slider::-moz-range-thumb {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer;
+    }
+    .donate-input-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 22px;
+    }
+    .donate-input-label { font-size: 14px; color: var(--text-2); white-space: nowrap; }
+    .donate-input {
+      flex: 1; padding: 11px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); color: var(--text);
+      font-size: 16px; font-family: inherit; outline: none; text-align: center;
+    }
+    .donate-input:focus { border-color: var(--border-s); }
   </style>
 
   <!-- [2] Apply theme synchronously before paint -->
@@ -407,7 +434,7 @@
     <div class="hdr-logo">PairSlice</div>
     <div class="hdr-tag">Split images for Threads</div>
   </div>
-  <a class="ios-pill" href="#" id="iosLink">🍎 iOS App</a>
+  <a class="ios-pill" href="#" id="iosLink">iOS App</a>
 </header>
 
 <!-- ── HOME PAGE ──────────────────────────────────────────────── -->
@@ -417,19 +444,19 @@
 
   <div class="dz" id="dz">
     <input type="file" id="fileInput" accept="image/*" />
-    <div class="dz-icon">🖼️</div>
+    <div class="dz-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
     <div class="dz-title">Drop image here</div>
     <div class="dz-hint">or tap to choose from your device</div>
   </div>
 
   <div class="act-row">
-    <button class="act-btn" id="urlBtn">🔗 &nbsp;Paste URL</button>
+    <button class="act-btn" id="urlBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> &nbsp;Paste URL</button>
   </div>
 
   <div class="feats">
-    <div class="feat"><div class="feat-ico">✂️</div><div class="feat-txt">Pixel-perfect<br/>vertical split</div></div>
-    <div class="feat"><div class="feat-ico">🎯</div><div class="feat-txt">Exact midpoint<br/>guaranteed</div></div>
-    <div class="feat"><div class="feat-ico">⚡️</div><div class="feat-txt">Instant<br/>download</div></div>
+    <div class="feat"><div class="feat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></div><div class="feat-txt">Pixel-perfect<br/>vertical split</div></div>
+    <div class="feat"><div class="feat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg></div><div class="feat-txt">Exact midpoint<br/>guaranteed</div></div>
+    <div class="feat"><div class="feat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="feat-txt">Instant<br/>download</div></div>
   </div>
 </div>
 
@@ -449,7 +476,7 @@
   <div class="info-label">Splits exactly at the vertical midpoint</div>
 
   <button class="btn-primary" id="splitBtn" onclick="doSplit()">
-    ✂️ &nbsp;Split Image
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>Split Image
   </button>
 </div>
 
@@ -461,7 +488,7 @@
   </div>
 
   <div class="ok-banner">
-    <span class="ok-ico">✅</span>
+    <span class="ok-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
     Image split at exact vertical midpoint
   </div>
 
@@ -475,26 +502,39 @@
   </div>
 
   <div class="dl-actions">
-    <button class="dl-save-btn" id="dlBoth">⬇</button>
-    <button class="dl-icon-btn" id="dlShare" title="More options">•••</button>
-  </div>
-
-  <!-- Share bottom sheet -->
-  <div class="share-overlay" id="shareOverlay" onclick="closeShareSheet(event)">
-    <div class="share-sheet">
-      <div class="share-handle"></div>
-      <button class="share-opt" id="shareNative">
-        <span class="share-opt-ico">📤</span>Share to other apps
-      </button>
-      <button class="share-opt" id="shareCopy">
-        <span class="share-opt-ico">📋</span>Copy to clipboard
-      </button>
-      <button class="share-cancel" onclick="closeShareSheet()">Cancel</button>
-    </div>
+    <button class="dl-save-btn" id="dlBoth"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M3 21h18"/></svg></button>
+    <button class="dl-icon-btn" id="dlShare" title="Copy to clipboard"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
   </div>
 
   <button class="btn-sec" onclick="goHome()">↩ &nbsp;Split Another Image</button>
-  <button class="donate-btn" id="donateBtn" onclick="sendDonation()">❤️ &nbsp;Support PairSlice — 50 Stars</button>
+</div>
+
+<!-- ── Donation corner button (fixed, only in Telegram) ──────── -->
+<button class="donate-corner" id="donateCorner" onclick="openDonateSheet()">♥ Donation</button>
+
+<!-- ── Donation amount sheet ─────────────────────────────────── -->
+<div class="donate-overlay" id="donateOverlay" onclick="closeDonateSheet(event)">
+  <div class="donate-sheet">
+    <div class="donate-handle"></div>
+    <div class="donate-title">Donation</div>
+    <div class="donate-sub">Поддержи автора ❤️</div>
+    <div class="donate-amount-row">
+      <span class="donate-stars-display" id="donateAmountDisplay">50</span>
+      <span class="donate-star-ico">★</span>
+    </div>
+    <input type="range" class="donate-slider" id="donateSlider"
+           min="10" max="500" step="10" value="50"
+           oninput="onDonateSlider(this.value)" />
+    <div class="donate-input-row">
+      <span class="donate-input-label">Custom:</span>
+      <input type="number" class="donate-input" id="donateInput"
+             value="50" min="1" max="2500"
+             oninput="onDonateInput(this.value)" />
+      <span class="donate-input-label">Stars</span>
+    </div>
+    <button class="btn-primary" id="donateConfirmBtn" onclick="confirmDonation()">Donate 50 Stars</button>
+    <button class="modal-cancel" onclick="closeDonateSheet()">Cancel</button>
+  </div>
 </div>
 
 <!-- ── URL modal ─────────────────────────────────────────────── -->
@@ -553,6 +593,9 @@ if (isTelegram) {
 
   // [4] Hide our custom header — TMA has its own title bar
   document.getElementById('mainHeader').style.display = 'none';
+
+  // Show donation corner button
+  document.getElementById('donateCorner').style.display = '';
 }
 
 // ── Runtime state ────────────────────────────────────────────────
@@ -749,14 +792,8 @@ function buildResultPage() {
       <div class="half-lbl">Post 2nd</div>
     </div>`;
 
-  document.getElementById('dlBoth').onclick    = downloadBoth;
-  document.getElementById('dlShare').onclick   = openShareSheet;
-  document.getElementById('shareNative').onclick = shareImages;
-  document.getElementById('shareCopy').onclick   = copyBothToClipboard;
-
-  // Show donate button only inside Telegram
-  const donateBtn = document.getElementById('donateBtn');
-  if (donateBtn) donateBtn.style.display = isTelegram ? '' : 'none';
+  document.getElementById('dlBoth').onclick  = downloadBoth;
+  document.getElementById('dlShare').onclick = copyBothToClipboard;
 }
 
 // [13] Cross-platform download
@@ -857,7 +894,6 @@ async function downloadBoth() {
 
 // Copy first image to clipboard (Clipboard API)
 async function copyBothToClipboard() {
-  closeShareSheet();
   try {
     const blob = canvasToJpegBlob(leftCanvas);
     await navigator.clipboard.write([
@@ -872,36 +908,6 @@ async function copyBothToClipboard() {
       showToast('Copy not supported on this device');
     }
   }
-}
-
-// Share via native system share sheet (other apps)
-async function shareImages() {
-  closeShareSheet();
-  const blob1 = canvasToJpegBlob(leftCanvas);
-  const blob2 = canvasToJpegBlob(rightCanvas);
-  const files = [
-    new File([blob1], 'pairslice-1-post-first.jpg', { type: 'image/jpeg' }),
-    new File([blob2], 'pairslice-2-post-second.jpg', { type: 'image/jpeg' }),
-  ];
-  if (navigator.canShare?.({ files })) {
-    try {
-      await navigator.share({ files });
-    } catch (e) {
-      if (e.name !== 'AbortError') showToast('Share failed');
-    }
-  } else {
-    showToast('Sharing not supported on this device');
-  }
-}
-
-// ── Share bottom sheet ────────────────────────────────────────
-function openShareSheet() {
-  document.getElementById('shareOverlay').classList.add('on');
-}
-function closeShareSheet(e) {
-  // Close on backdrop tap or explicit call; ignore taps inside the sheet
-  if (e && e.target !== document.getElementById('shareOverlay')) return;
-  document.getElementById('shareOverlay').classList.remove('on');
 }
 
 function openImgViewer(dataUrl) {
@@ -919,7 +925,7 @@ function closeImgViewer() {
 }
 
 // ── Donation via Stars ────────────────────────────────────────
-async function sendDonation() {
+async function sendDonation(amount) {
   if (!isTelegram) {
     showToast('Donations via Stars are available inside the Telegram bot.');
     return;
@@ -929,7 +935,7 @@ async function sendDonation() {
     const res = await fetch(`${BACKEND}/create-invoice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData: tg.initData, productType: 'donate' }),
+      body: JSON.stringify({ initData: tg.initData, productType: 'donate', stars: amount }),
     });
     const data = await res.json();
     hideLoader();
@@ -944,6 +950,46 @@ async function sendDonation() {
     hideLoader();
     showToast('Network error. Please try again.');
   }
+}
+
+// ── Donation sheet ────────────────────────────────────────────
+let donateAmount = 50;
+
+function openDonateSheet() {
+  donateAmount = 50;
+  document.getElementById('donateSlider').value     = 50;
+  document.getElementById('donateInput').value      = 50;
+  document.getElementById('donateAmountDisplay').textContent = 50;
+  document.getElementById('donateConfirmBtn').textContent    = 'Donate 50 Stars';
+  document.getElementById('donateOverlay').classList.add('on');
+}
+
+function closeDonateSheet(e) {
+  if (e && e.target !== document.getElementById('donateOverlay')) return;
+  document.getElementById('donateOverlay').classList.remove('on');
+}
+
+function onDonateSlider(val) {
+  donateAmount = parseInt(val, 10);
+  document.getElementById('donateAmountDisplay').textContent = donateAmount;
+  document.getElementById('donateInput').value               = donateAmount;
+  document.getElementById('donateConfirmBtn').textContent    = `Donate ${donateAmount} Stars`;
+}
+
+function onDonateInput(val) {
+  let n = parseInt(val, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  if (n > 2500) n = 2500;
+  donateAmount = n;
+  document.getElementById('donateAmountDisplay').textContent = donateAmount;
+  const slider = document.getElementById('donateSlider');
+  slider.value = Math.min(Math.max(n, parseInt(slider.min, 10)), parseInt(slider.max, 10));
+  document.getElementById('donateConfirmBtn').textContent = `Donate ${donateAmount} Stars`;
+}
+
+async function confirmDonation() {
+  closeDonateSheet();
+  await sendDonation(donateAmount);
 }
 
 // ════════════════════════════════════════════════════════════════

@@ -32,9 +32,17 @@ router.post('/create-invoice', async (req, res) => {
   const { initData, productType } = req.body;
 
   // 1. Validate product type
-  const product = PRODUCTS[productType];
+  let product = PRODUCTS[productType];
   if (!product) {
     return res.status(400).json({ error: 'invalid productType' });
+  }
+
+  // Allow custom Stars amount for donations
+  if (productType === 'donate') {
+    const customStars = parseInt(req.body.stars, 10);
+    if (customStars && customStars >= 1) {
+      product = { ...product, stars: customStars };
+    }
   }
 
   // 2. Validate Telegram initData (HMAC)
