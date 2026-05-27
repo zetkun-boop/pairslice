@@ -14,6 +14,11 @@ const PRODUCTS = {
     description: 'Unlimited image splits forever — no more paywalls, ever',
     stars: 300,  // ~$3.99
   },
+  donate: {
+    title: 'Support PairSlice',
+    description: 'Say thanks to the developer ❤️',
+    stars: 50,
+  },
 };
 
 /**

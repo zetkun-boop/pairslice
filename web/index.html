@@ -22,8 +22,26 @@
       --text-2:       rgba(255,255,255,.50);
       --text-3:       rgba(255,255,255,.30);
       --green:        #22c55e;
+      --accent:       #fff;
+      --accent-text:  #000;
+      --num-bg:       rgba(255,255,255,.14);
       --r:            14px;
       --r-sm:         10px;
+    }
+    /* ── Light theme ────────────────────────────────────────────────── */
+    [data-theme="light"] {
+      --bg:           #f2f2f7;
+      --surface:      #ffffff;
+      --surface-h:    #ebebf0;
+      --border:       rgba(0,0,0,.12);
+      --border-s:     rgba(0,0,0,.22);
+      --text:         #000000;
+      --text-2:       rgba(0,0,0,.55);
+      --text-3:       rgba(0,0,0,.40);
+      --green:        #16a34a;
+      --accent:       #000000;
+      --accent-text:  #ffffff;
+      --num-bg:       rgba(0,0,0,.10);
     }
     body {
       background: var(--bg);
@@ -46,7 +64,7 @@
     .hdr-tag  { font-size: 11px; color: var(--text-3); }
     .ios-pill {
       display: flex; align-items: center; gap: 5px;
-      background: #fff; color: #000;
+      background: var(--accent); color: var(--accent-text);
       font-size: 11px; font-weight: 700;
       padding: 5px 11px; border-radius: 20px;
       text-decoration: none; white-space: nowrap;
@@ -114,7 +132,8 @@
     .nav-back {
       display: flex; align-items: center; gap: 4px;
       background: none; border: none; color: var(--text-2);
-      font-size: 32px; font-family: inherit; cursor: pointer; padding: 4px 0;
+      font-size: 16px; font-family: inherit; cursor: pointer;
+      padding: 4px 0; min-height: 44px;
     }
     .nav-back:hover { color: var(--text); }
     .nav-title {
@@ -161,17 +180,6 @@
     .half-img {
       width: 100%; display: block;
       border-radius: var(--r-sm); border: 1px solid var(--border);
-      /* Prevent iOS long-press Save Image */
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-      /* Blur to signal lower quality */
-      filter: blur(0.6px);
-    }
-    /* Transparent overlay catches all touch/mouse events → blocks copy/drag/long-press */
-    .half-wrap::after {
-      content: ''; position: absolute; inset: 0; z-index: 5;
-      -webkit-user-select: none; user-select: none;
     }
     .half-num {
       position: absolute; top: 8px; left: 8px;
@@ -191,7 +199,7 @@
     .g-step:last-child { margin-bottom: 0; }
     .g-num {
       flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
-      background: rgba(255,255,255,.14); color: #fff;
+      background: var(--num-bg); color: var(--text-2);
       font-size: 11px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
     }
@@ -199,14 +207,8 @@
 
     /* Download buttons */
     .dl-actions { display: flex; gap: 10px; margin-bottom: 10px; }
-    .dl-save-btn {
-      flex: 1; padding: 16px;
-      background: #fff; color: #000; border: none;
-      border-radius: var(--r); font-size: 22px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: opacity .15s;
-    }
-    .dl-save-btn:hover { opacity: .88; }
+    .dl-save-btn { flex: 1; padding: 16px; background: var(--accent); color: var(--accent-text); border: none; border-radius: var(--r); font-size: 22px; cursor: pointer; transition: opacity .15s; }
+    .dl-save-btn:active { opacity: .8; }
     .dl-icon-btn {
       width: 56px; height: 56px;
       background: var(--surface); border: 1px solid var(--border);
@@ -245,24 +247,24 @@
 
     /* ── Shared buttons ──────────────────────────────────── */
     .btn-primary {
-      width: 100%; padding: 16px;
-      background: #fff; color: #000; border: none; border-radius: var(--r);
-      font-size: 17px; font-weight: 600; font-family: inherit; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      display: block; width: 100%; padding: 18px;
+      background: var(--accent); color: var(--accent-text);
+      border: none; border-radius: var(--r);
+      font-size: 17px; font-weight: 600; font-family: inherit;
+      cursor: pointer; margin-top: 20px;
       transition: opacity .15s;
     }
-    .btn-primary:hover { opacity: .88; }
-    .btn-primary:active { transform: scale(.99); }
-    .btn-primary:disabled { opacity: .4; cursor: default; }
+    .btn-primary:active { opacity: .8; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
 
     .btn-sec {
-      width: 100%; padding: 14px;
-      background: transparent; color: var(--text-3);
-      border: 1px solid var(--border); border-radius: var(--r);
+      display: block; width: 100%; padding: 16px; margin-top: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); color: var(--text-2);
       font-size: 15px; font-family: inherit; cursor: pointer;
-      transition: color .15s, border-color .15s;
+      transition: background .15s;
     }
-    .btn-sec:hover { color: var(--text); border-color: var(--border-s); }
+    .btn-sec:hover { background: var(--surface-h); }
 
     /* ── URL modal ───────────────────────────────────────── */
     .overlay {
@@ -331,60 +333,14 @@
       font-size: 14px; cursor: pointer; flex-shrink: 0;
     }
 
-    /* ── Paywall modal ───────────────────────────────────── */
-    /* [9] Stars-based paywall (no ads) */
-    .pw-modal {
-      background: #0d0d0d; border: 1px solid var(--border);
-      border-radius: 20px 20px 0 0;
-      width: 100%; max-width: 480px;
-      padding: 24px 24px calc(52px + env(safe-area-inset-bottom, 0px));
+    .donate-btn {
+      display: block; width: 100%; padding: 14px; margin-top: 10px;
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--r); color: var(--text-3);
+      font-size: 14px; font-family: inherit; cursor: pointer;
+      transition: color .15s, border-color .15s;
     }
-    .pw-head { text-align: center; margin-bottom: 24px; }
-    .pw-head .ico { font-size: 28px; display: block; margin-bottom: 8px; }
-    .pw-head h2 { font-size: 20px; font-weight: 700; }
-    .pw-head p { font-size: 14px; color: var(--text-3); margin-top: 4px; }
-    .pw-card {
-      display: flex; align-items: center; gap: 14px;
-      padding: 16px; border-radius: var(--r);
-      background: var(--surface); border: 1px solid var(--border);
-      margin-bottom: 10px; cursor: pointer;
-      transition: background .15s;
-    }
-    .pw-card:hover { background: var(--surface-h); }
-    .pw-card.premium { background: #fff; border-color: #fff; }
-    .pw-card.premium:hover { background: rgba(255,255,255,.92); }
-    .pw-ava {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: rgba(255,255,255,.1);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; flex-shrink: 0;
-    }
-    .pw-card.premium .pw-ava { background: #000; }
-    .pw-info h3 { font-size: 16px; font-weight: 600; }
-    .pw-info p { font-size: 13px; color: var(--text-2); margin-top: 2px; }
-    .pw-card.premium .pw-info h3 { color: #000; }
-    .pw-card.premium .pw-info p { color: rgba(0,0,0,.55); }
-    .pw-price {
-      font-size: 13px; font-weight: 700;
-      margin-left: auto; white-space: nowrap;
-      color: var(--text-2);
-    }
-    .pw-card.premium .pw-price {
-      color: rgba(0,0,0,.6);
-      background: rgba(0,0,0,.12); padding: 3px 8px; border-radius: 20px;
-    }
-
-    .free-counter {
-      text-align: center; font-size: 12px; color: var(--text-3); margin-bottom: 8px;
-    }
-    .free-counter span { color: var(--green); font-weight: 600; }
-
-    .dev-badge {
-      position: fixed; top: 10px; right: 10px; z-index: 9999;
-      background: #f59e0b; color: #000; font-size: 10px; font-weight: 700;
-      padding: 3px 7px; border-radius: 6px; letter-spacing: .5px;
-      pointer-events: none;
-    }
+    .donate-btn:hover { color: var(--text-2); border-color: var(--border-s); }
 
     /* ── Share bottom sheet ───────────────────────────── */
     .share-overlay {
@@ -415,21 +371,30 @@
     }
   </style>
 
-  <!-- [2] Override CSS vars with Telegram theme synchronously (before paint) -->
+  <!-- [2] Apply theme synchronously before paint -->
   <script>
     (function () {
       const tg = window.Telegram?.WebApp;
-      if (!tg) return;
-      const p = tg.themeParams;
+      const isLight = tg
+        ? tg.colorScheme === 'light'
+        : window.matchMedia('(prefers-color-scheme: light)').matches;
+      document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+
+      const p = tg?.themeParams;
+      if (!p) return;
       const r = document.documentElement.style;
-      // Map Telegram theme params to our CSS variables
-      if (p.bg_color)            r.setProperty('--bg',      p.bg_color);
-      if (p.text_color)          r.setProperty('--text',    p.text_color);
-      if (p.hint_color)          r.setProperty('--text-2',  p.hint_color);
-      if (p.hint_color)          r.setProperty('--text-3',  p.hint_color + '99');
-      if (p.button_color)        r.setProperty('--green',   p.button_color);
-      if (p.secondary_bg_color)  r.setProperty('--surface', p.secondary_bg_color);
-      if (p.secondary_bg_color)  r.setProperty('--surface-h', p.secondary_bg_color);
+      if (p.bg_color)           r.setProperty('--bg',        p.bg_color);
+      if (p.text_color)         r.setProperty('--text',       p.text_color);
+      if (p.hint_color) {
+        r.setProperty('--text-2', p.hint_color);
+        r.setProperty('--text-3', p.hint_color + '80');
+      }
+      if (p.secondary_bg_color) {
+        r.setProperty('--surface',   p.secondary_bg_color);
+        r.setProperty('--surface-h', p.secondary_bg_color);
+      }
+      if (p.button_color)      r.setProperty('--accent',      p.button_color);
+      if (p.button_text_color) r.setProperty('--accent-text', p.button_text_color);
     })();
   </script>
 </head>
@@ -509,8 +474,6 @@
     <div class="g-step"><div class="g-num">3</div><div class="g-txt">Viewers swipe or pinch the carousel — images connect seamlessly ✨</div></div>
   </div>
 
-  <div class="free-counter" id="freeCounter"></div>
-
   <div class="dl-actions">
     <button class="dl-save-btn" id="dlBoth">⬇</button>
     <button class="dl-icon-btn" id="dlShare" title="More options">•••</button>
@@ -531,6 +494,7 @@
   </div>
 
   <button class="btn-sec" onclick="goHome()">↩ &nbsp;Split Another Image</button>
+  <button class="donate-btn" id="donateBtn" onclick="sendDonation()">❤️ &nbsp;Support PairSlice — 50 Stars</button>
 </div>
 
 <!-- ── URL modal ─────────────────────────────────────────────── -->
@@ -543,38 +507,6 @@
            autocapitalize="none" autocorrect="off" spellcheck="false" />
     <button class="btn-primary" style="margin-top:12px" onclick="loadFromURL()">Load Image</button>
     <button class="modal-cancel" onclick="closeURL()">Cancel</button>
-  </div>
-</div>
-
-<!-- ── Paywall modal ──────────────────────────────────────────── -->
-<!-- [9] Stars-based: 75⭐ one split (~$0.99), 300⭐ unlimited (~$3.99). No ads. -->
-<div class="overlay" id="pwOverlay">
-  <div class="pw-modal">
-    <div class="modal-handle"></div>
-    <div class="pw-head">
-      <span class="ico">✂️</span>
-      <h2>No free splits left</h2>
-    </div>
-
-    <!-- Consumable: 75 Stars = one split (~$0.99) -->
-    <div class="pw-card" id="buyOneCard" onclick="buyOne()">
-      <div class="pw-ava">⭐</div>
-      <div class="pw-info">
-        <h3>One Split</h3>
-        <p>Perfect for right now</p>
-      </div>
-      <span class="pw-price">75 ⭐</span>
-    </div>
-
-    <!-- Non-consumable: 300 Stars = unlimited forever (~$3.99) -->
-    <div class="pw-card premium" id="buyUnlimitedCard" onclick="buyUnlimited()">
-      <div class="pw-ava" style="background:#000">👑</div>
-      <div class="pw-info">
-        <h3>Unlimited Splits</h3>
-        <p>Forever — no more paywalls</p>
-      </div>
-      <span class="pw-price">300 ⭐</span>
-    </div>
   </div>
 </div>
 
@@ -624,16 +556,10 @@ if (isTelegram) {
 }
 
 // ── Runtime state ────────────────────────────────────────────────
-const FREE_LIMIT   = 3;
-let splitsUsed     = parseInt(localStorage.getItem('ps_splits') || '0', 10);
-let isPremium      = false;   // server-authoritative in TMA; localStorage fallback on web
-let extraSplits    = 0;       // consumable credits from "single" purchases (server-side)
-let isDevMode      = false;   // true when logged-in user is the owner (OWNER_CHAT_ID)
-let pendingSave    = false;   // true if user was blocked by paywall when trying to save
-let leftCanvas     = null;
-let rightCanvas    = null;
-let sourceDataURL  = null;
-let toastTimer     = null;
+let leftCanvas    = null;
+let rightCanvas   = null;
+let sourceDataURL = null;
+let toastTimer    = null;
 
 // ════════════════════════════════════════════════════════════════
 //  [12] TELEGRAM BACK BUTTON
@@ -694,32 +620,6 @@ function hideToast() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  [6] USER STATE — fetch from server on load
-// ════════════════════════════════════════════════════════════════
-async function initUserState() {
-  if (isTelegram && tgUserId) {
-    try {
-      const res  = await fetch(`${BACKEND}/user/status?userId=${tgUserId}`);
-      const data = await res.json();
-      isPremium   = !!data.isPremium;
-      extraSplits = data.extraSplits || 0;
-      isDevMode   = !!data.isDevMode;
-      if (isDevMode) _activateDevMode();
-    } catch (e) {
-      console.warn('[pairslice] Could not fetch user status; assuming free tier');
-      // Graceful degradation: fall through to localStorage
-      isPremium  = localStorage.getItem('ps_premium') === '1';
-      splitsUsed = parseInt(localStorage.getItem('ps_splits') || '0', 10);
-    }
-  } else {
-    // Non-TMA (direct web access) — use localStorage as before
-    isPremium  = localStorage.getItem('ps_premium') === '1';
-    splitsUsed = parseInt(localStorage.getItem('ps_splits') || '0', 10);
-  }
-}
-document.addEventListener('DOMContentLoaded', initUserState);
-
-// ════════════════════════════════════════════════════════════════
 //  IMAGE LOADING
 // ════════════════════════════════════════════════════════════════
 async function loadImageFromFile(file) {
@@ -778,27 +678,7 @@ async function loadFromURL() {
 // ════════════════════════════════════════════════════════════════
 function showPreviewPage(dataURL) {
   document.getElementById('prevImg').src = dataURL;
-  updateFreeCounter();
   show('page-preview');
-}
-
-// [11] Free counter — shown on result page above save button
-function updateFreeCounter() {
-  const el = document.getElementById('freeCounter');
-  if (isPremium) {
-    el.innerHTML = '<span>✨ Unlimited saves</span>';
-    el.style.color = 'rgba(255,255,255,.4)';
-  } else if (isTelegram && extraSplits > 0) {
-    el.innerHTML = `Paid saves available: <span>${extraSplits}</span>`;
-    el.style.color = '';
-  } else {
-    const left = Math.max(0, FREE_LIMIT - splitsUsed);
-    const word = left === 1 ? 'free save' : 'free saves';
-    el.innerHTML = left > 0
-      ? `<span>${left} ${word} left</span> out of ${FREE_LIMIT}`
-      : '';   // empty: paywall will explain itself
-    el.style.color = '';
-  }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -851,38 +731,19 @@ function loadImg(src) {
 // ════════════════════════════════════════════════════════════════
 //  RESULT PAGE
 // ════════════════════════════════════════════════════════════════
-// Generate a degraded preview (small size + low quality) for display only.
-// Full-resolution canvases (leftCanvas, rightCanvas) are used for actual saving.
-function buildPreviewUrl(canvas) {
-  const MAX_W = 160; // small enough to be visibly degraded
-  const scale = Math.min(1, MAX_W / canvas.width);
-  const pw = Math.max(1, Math.floor(canvas.width  * scale));
-  const ph = Math.max(1, Math.floor(canvas.height * scale));
-  const tmp = document.createElement('canvas');
-  tmp.width  = pw;
-  tmp.height = ph;
-  tmp.getContext('2d').drawImage(canvas, 0, 0, pw, ph);
-  return tmp.toDataURL('image/jpeg', 0.18); // very low JPEG quality
-}
-
 function buildResultPage() {
-  const prev1 = buildPreviewUrl(leftCanvas);
-  const prev2 = buildPreviewUrl(rightCanvas);
-
   const grid = document.getElementById('halvesGrid');
   grid.innerHTML = `
     <div class="half">
       <div class="half-wrap">
-        <img class="half-img" src="${prev1}"
-             oncontextmenu="return false" ondragstart="return false" />
+        <img class="half-img" src="${leftCanvas.toDataURL('image/jpeg',.9)}" />
         <div class="half-num">1</div>
       </div>
       <div class="half-lbl">Post 1st</div>
     </div>
     <div class="half">
       <div class="half-wrap">
-        <img class="half-img" src="${prev2}"
-             oncontextmenu="return false" ondragstart="return false" />
+        <img class="half-img" src="${rightCanvas.toDataURL('image/jpeg',.9)}" />
         <div class="half-num">2</div>
       </div>
       <div class="half-lbl">Post 2nd</div>
@@ -892,24 +753,10 @@ function buildResultPage() {
   document.getElementById('dlShare').onclick   = openShareSheet;
   document.getElementById('shareNative').onclick = shareImages;
   document.getElementById('shareCopy').onclick   = copyBothToClipboard;
-}
 
-// ── Save gate helpers ─────────────────────────────────────────
-function canSave() {
-  if (isPremium) return true;
-  if (isTelegram && extraSplits > 0) return true;
-  return splitsUsed < FREE_LIMIT;
-}
-
-function consumeSave() {
-  if (isPremium) return;
-  if (isTelegram && extraSplits > 0) {
-    extraSplits = Math.max(0, extraSplits - 1);
-  } else {
-    splitsUsed++;
-    localStorage.setItem('ps_splits', splitsUsed);
-  }
-  updateFreeCounter();
+  // Show donate button only inside Telegram
+  const donateBtn = document.getElementById('donateBtn');
+  if (donateBtn) donateBtn.style.display = isTelegram ? '' : 'none';
 }
 
 // [13] Cross-platform download
@@ -965,13 +812,6 @@ async function downloadCanvas(canvas, name) {
 }
 
 async function downloadBoth() {
-  if (!canSave()) {
-    pendingSave = true;
-    openPaywall();
-    return;
-  }
-  consumeSave();
-
   // Create both blobs synchronously before any await (preserves user gesture)
   const blob1 = canvasToJpegBlob(leftCanvas);
   const blob2 = canvasToJpegBlob(rightCanvas);
@@ -1018,13 +858,6 @@ async function downloadBoth() {
 // Copy first image to clipboard (Clipboard API)
 async function copyBothToClipboard() {
   closeShareSheet();
-  if (!canSave()) {
-    pendingSave = true;
-    openPaywall();
-    return;
-  }
-  consumeSave();
-
   try {
     const blob = canvasToJpegBlob(leftCanvas);
     await navigator.clipboard.write([
@@ -1032,7 +865,6 @@ async function copyBothToClipboard() {
     ]);
     showToast('Image 1 copied — repeat for image 2');
   } catch (e) {
-    // Fallback: copy as data URL
     try {
       await navigator.clipboard.writeText(leftCanvas.toDataURL('image/jpeg', 0.92));
       showToast('Image copied as URL');
@@ -1045,13 +877,6 @@ async function copyBothToClipboard() {
 // Share via native system share sheet (other apps)
 async function shareImages() {
   closeShareSheet();
-  if (!canSave()) {
-    pendingSave = true;
-    openPaywall();
-    return;
-  }
-  consumeSave();
-
   const blob1 = canvasToJpegBlob(leftCanvas);
   const blob2 = canvasToJpegBlob(rightCanvas);
   const files = [
@@ -1093,103 +918,32 @@ function closeImgViewer() {
   document.getElementById('ivImg').src = '';
 }
 
-// ════════════════════════════════════════════════════════════════
-//  [9][10] PAYWALL — Stars payments
-// ════════════════════════════════════════════════════════════════
-function openPaywall() {
-  document.getElementById('pwOverlay').classList.add('on');
-}
-function closePaywall() {
-  document.getElementById('pwOverlay').classList.remove('on');
-}
-
-// 5 Stars → one split
-async function buyOne() {
-  closePaywall();
+// ── Donation via Stars ────────────────────────────────────────
+async function sendDonation() {
   if (!isTelegram) {
-    showToast('Payments are available inside the Telegram bot. Open @PairSliceBot to use Stars.');
+    showToast('Donations via Stars are available inside the Telegram bot.');
     return;
   }
-  await startPayment('single');
-}
-
-// 50 Stars → unlimited forever
-async function buyUnlimited() {
-  closePaywall();
-  if (!isTelegram) {
-    showToast('Payments are available inside the Telegram bot. Open @PairSliceBot to use Stars.');
-    return;
-  }
-  await startPayment('unlimited');
-}
-
-async function startPayment(productType) {
   showLoader('Opening payment…');
   try {
     const res = await fetch(`${BACKEND}/create-invoice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData: tg.initData, productType }),
+      body: JSON.stringify({ initData: tg.initData, productType: 'donate' }),
     });
-
     const data = await res.json();
     hideLoader();
-
     if (!data.invoiceUrl) {
-      showToast('Could not create invoice. Please try again.');
+      showToast('Could not create payment. Please try again.');
       return;
     }
-
-    // Opens the native Telegram Stars payment UI
-    tg.openInvoice(data.invoiceUrl, async (status) => {
-      if (status === 'paid') {
-        // Wait briefly for the webhook to update the store before re-fetching
-        await new Promise(r => setTimeout(r, 600));
-        await initUserState();
-        updateFreeCounter();
-
-        const msg = productType === 'unlimited'
-          ? '✨ Unlimited splits unlocked!'
-          : '⭐ One split credited!';
-        showToast(msg);
-
-        // Auto-complete the save that triggered the paywall
-        if (pendingSave) {
-          pendingSave = false;
-          await downloadBoth();
-        }
-      } else if (status === 'cancelled') {
-        pendingSave = false;
-        // Silent — user chose to cancel
-      } else if (status === 'failed') {
-        pendingSave = false;
-        showToast('Payment failed. Please try again.');
-      }
+    tg.openInvoice(data.invoiceUrl, (status) => {
+      if (status === 'paid') showToast('❤️ Thank you for your support!');
     });
   } catch (e) {
     hideLoader();
     showToast('Network error. Please try again.');
-    console.error('[payment] error:', e);
   }
-}
-
-// ── Dev mode ─────────────────────────────────────────────────
-function showDevBadge() {
-  if (document.getElementById('devBadge')) return;
-  const el = document.createElement('div');
-  el.id        = 'devBadge';
-  el.className = 'dev-badge';
-  el.textContent = '⚙ DEV';
-  document.body.appendChild(el);
-}
-
-// Dev backdoor — not exposed on window, only callable internally
-// Activated automatically when server returns isDevMode:true (OWNER_CHAT_ID match)
-function _activateDevMode() {
-  isPremium = true;
-  isDevMode = true;
-  updateFreeCounter();
-  showDevBadge();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1240,9 +994,6 @@ document.getElementById('urlBtn').addEventListener('click', openURL);
 
 document.getElementById('urlOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('urlOverlay')) closeURL();
-});
-document.getElementById('pwOverlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('pwOverlay')) closePaywall();
 });
 
 // iOS pill — show App Store or TMA hint

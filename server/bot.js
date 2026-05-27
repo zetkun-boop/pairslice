@@ -68,6 +68,12 @@ export function createBot(token, frontendUrl) {
         '⭐ *One split credited!*\n\nSwitch back to PairSlice — your split is ready.',
         { parse_mode: 'Markdown' }
       );
+    } else if (payload.type === 'donate') {
+      console.log(`[bot] Donation received from user ${userId}`);
+      await ctx.reply(
+        '❤️ *Thank you for your support!*\n\nYour Stars mean a lot and help keep PairSlice free for everyone.',
+        { parse_mode: 'Markdown' }
+      );
     } else {
       console.warn('[bot] Unknown payload type:', payload.type);
     }
@@ -75,8 +81,8 @@ export function createBot(token, frontendUrl) {
     // ── Notify owner ──────────────────────────────────────────
     const ownerChatId = process.env.OWNER_CHAT_ID;
     if (ownerChatId) {
-      const emoji  = payload.type === 'unlimited' ? '🎉' : '⭐';
-      const product = payload.type === 'unlimited' ? 'Unlimited (300 ⭐)' : 'One Split (75 ⭐)';
+      const emoji   = payload.type === 'unlimited' ? '🎉' : payload.type === 'donate' ? '❤️' : '⭐';
+      const product = payload.type === 'unlimited' ? 'Unlimited (300 ⭐)' : payload.type === 'donate' ? 'Donation (50 ⭐)' : 'One Split (75 ⭐)';
       const text =
         `${emoji} *Новая покупка!*\n\n` +
         `👤 ${userName} (${userHandle})\n` +
