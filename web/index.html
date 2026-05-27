@@ -236,12 +236,19 @@
       border-radius: 50px; color: #fff; font-size: 15px;
       font-family: inherit; cursor: pointer;
     }
+    #imgViewer .iv-next {
+      margin-top: 16px;
+      padding: 13px 32px;
+      background: #fff; border: none;
+      border-radius: 50px; color: #000; font-size: 15px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+    }
 
     /* ── Shared buttons ──────────────────────────────────── */
     .btn-primary {
       display: block; width: 100%; padding: 18px;
-      background: var(--accent); color: var(--accent-text);
-      border: none; border-radius: var(--r);
+      background: #111; color: #fff;
+      border: 1px solid rgba(255,255,255,.14); border-radius: var(--r);
       font-size: 17px; font-weight: 600; font-family: inherit;
       cursor: pointer; margin-top: 20px;
       transition: opacity .15s;
@@ -533,6 +540,7 @@
 <div id="imgViewer">
   <p class="iv-hint" id="ivHint">Hold the image → <strong>Save to Photos</strong></p>
   <img class="iv-img" id="ivImg" src="" alt="" />
+  <button class="iv-next" id="ivNext" onclick="imgViewerNext()" style="display:none">Next Image →</button>
   <button class="iv-close" onclick="closeImgViewer()">Close</button>
 </div>
 
@@ -672,8 +680,13 @@ async function loadFromURL() {
   closeURL();
   showLoader('Downloading image…');
   try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    // Route through our server proxy to bypass browser CORS restrictions
+    const proxyUrl = `${BACKEND}/proxy?url=${encodeURIComponent(url)}`;
+    const resp = await fetch(proxyUrl);
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${resp.status}`);
+    }
     const blob = await resp.blob();
     if (!blob.type.startsWith('image/'))
       throw new Error('URL does not point to an image');
@@ -686,10 +699,7 @@ async function loadFromURL() {
     bitmap.close();
     showPreviewPage(sourceDataURL);
   } catch (e) {
-    const msg = e.message.includes('Failed to fetch') || e.message.includes('NetworkError')
-      ? 'Could not load the image. The server may block cross-origin requests. Try downloading the image and dragging it here instead.'
-      : 'Error: ' + e.message;
-    showToast(msg);
+    showToast('Could not load image: ' + e.message);
   } finally {
     hideLoader();
   }
@@ -811,10 +821,9 @@ async function downloadBoth() {
     }
   }
 
-  // Telegram fallback: show one at a time
+  // Telegram fallback: full-screen viewer with Next button for image 2
   if (isTelegram) {
-    openImgViewer(leftCanvas.toDataURL('image/jpeg', 0.92));
-    showToast('Hold image → Save to Photos. Then tap ⬇ for the second one.');
+    openImgViewer(leftCanvas.toDataURL('image/jpeg', 0.92), true);
     return;
   }
 
@@ -833,13 +842,23 @@ async function downloadBoth() {
   showToast('✅ Both images downloaded!');
 }
 
-function openImgViewer(dataUrl) {
-  document.getElementById('ivImg').src = dataUrl;
+function openImgViewer(dataUrl, showNext = false) {
   const isAndroid = isTelegram && tg.platform === 'android';
-  document.getElementById('ivHint').innerHTML = isAndroid
+  const saveHint  = isAndroid
     ? 'Hold the image → <strong>Save image</strong>'
     : 'Hold the image → <strong>Save to Photos</strong>';
+
+  document.getElementById('ivImg').src  = dataUrl;
+  document.getElementById('ivHint').innerHTML = showNext
+    ? `${saveHint}<br/><span style="font-size:11px;opacity:.55">Image 1 of 2 — save it, then tap Next</span>`
+    : `${saveHint}<br/><span style="font-size:11px;opacity:.55">Image 2 of 2</span>`;
+  document.getElementById('ivNext').style.display = showNext ? 'block' : 'none';
   document.getElementById('imgViewer').classList.add('on');
+}
+
+function imgViewerNext() {
+  // Replace viewer content with the second (right) image
+  openImgViewer(rightCanvas.toDataURL('image/jpeg', 0.92), false);
 }
 
 function closeImgViewer() {

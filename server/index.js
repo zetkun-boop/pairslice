@@ -9,6 +9,7 @@ import { createBot } from './bot.js';
 import { createWebhookRouter } from './routes/webhook.js';
 import invoiceRouter from './routes/invoice.js';
 import statusRouter from './routes/status.js';
+import proxyRouter from './routes/proxy.js';
 
 // ── Env validation ──────────────────────────────────────────
 const { BOT_TOKEN, FRONTEND_URL, PORT = '8080' } = process.env;
@@ -76,6 +77,7 @@ app.get('/admin/test-notify', async (req, res) => {
 // ── Routes ──────────────────────────────────────────────────
 app.use(invoiceRouter);    // POST /create-invoice
 app.use(statusRouter);     // GET  /user/status
+app.use(proxyRouter);      // GET  /proxy?url=...
 
 // ── Bot + Webhook ───────────────────────────────────────────
 const bot = createBot(BOT_TOKEN, FRONTEND_URL);
