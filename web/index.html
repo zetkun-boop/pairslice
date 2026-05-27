@@ -133,7 +133,7 @@
       display: flex; align-items: center; gap: 4px;
       background: none; border: none; color: var(--text-2);
       font-size: 16px; font-family: inherit; cursor: pointer;
-      padding: 4px 0; min-height: 44px;
+      padding: 0 12px 0 0; align-self: stretch; /* fill nav height → full row is tappable */
     }
     .nav-back:hover { color: var(--text); }
     .nav-title {
@@ -207,7 +207,7 @@
 
     /* Download buttons */
     .dl-actions { display: flex; gap: 10px; margin-bottom: 10px; }
-    .dl-save-btn { flex: 1; padding: 16px; background: var(--accent); color: var(--accent-text); border: none; border-radius: var(--r); font-size: 22px; cursor: pointer; transition: opacity .15s; display: flex; align-items: center; justify-content: center; }
+    .dl-save-btn { flex: 1; padding: 16px; background: #111; color: #fff; border: 1px solid rgba(255,255,255,.14); border-radius: var(--r); font-size: 22px; cursor: pointer; transition: opacity .15s; display: flex; align-items: center; justify-content: center; }
     .dl-save-btn:active { opacity: .8; }
 
     /* ── Full-screen image viewer (Telegram save workaround) ─ */
@@ -325,18 +325,6 @@
       font-size: 14px; cursor: pointer; flex-shrink: 0;
     }
 
-    /* ── Donate corner button ────────────────────────────── */
-    .donate-corner {
-      display: none;
-      position: fixed; top: 14px; right: 16px; z-index: 150;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 8px 14px;
-      color: var(--text-2); font-size: 13px; font-weight: 500;
-      font-family: inherit; cursor: pointer;
-      transition: background .15s, color .15s;
-      white-space: nowrap;
-    }
-    .donate-corner:hover { background: var(--surface-h); color: var(--text); }
 
     /* ── Donation amount sheet ────────────────────────────── */
     .donate-overlay {
@@ -497,11 +485,11 @@
     <button class="dl-save-btn" id="dlBoth"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M3 21h18"/></svg></button>
   </div>
 
+  <button class="btn-sec" id="donateInlineBtn" onclick="openDonateSheet()" style="display:none">⭐ Donation</button>
+
   <button class="btn-sec" onclick="goHome()">↩ &nbsp;Split Another Image</button>
 </div>
 
-<!-- ── Donation corner button (fixed, only in Telegram) ──────── -->
-<button class="donate-corner" id="donateCorner" onclick="openDonateSheet()">⭐ Donation</button>
 
 <!-- ── Donation amount sheet ─────────────────────────────────── -->
 <div class="donate-overlay" id="donateOverlay" onclick="closeDonateSheet(event)">
@@ -585,8 +573,8 @@ if (isTelegram) {
   // [4] Hide our custom header — TMA has its own title bar
   document.getElementById('mainHeader').style.display = 'none';
 
-  // Show donation corner button
-  document.getElementById('donateCorner').style.display = 'block';
+  // Show donation button on result page only
+  document.getElementById('donateInlineBtn').style.display = 'block';
 }
 
 // ── Runtime state ────────────────────────────────────────────────
