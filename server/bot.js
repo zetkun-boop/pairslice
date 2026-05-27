@@ -17,12 +17,16 @@ export function createBot(token, frontendUrl) {
     const kb = new InlineKeyboard().webApp('Open PairSlice ✂️', frontendUrl);
     await ctx.reply(
       '👋 Welcome to *PairSlice*!\n\n' +
-      'Split any image in half for a seamless Threads carousel.\n\n' +
-      '• 1 free split to try\n' +
-      '• ⭐ 75 Stars = one more split (~$0.99)\n' +
-      '• ⭐ 300 Stars = unlimited forever (~$3.99)',
+      'Split any image in half for a seamless Threads carousel — free, no limits, ever.\n\n' +
+      'If you enjoy it, you can support the developer with ⭐ Stars right inside the app!',
       { parse_mode: 'Markdown', reply_markup: kb }
     );
+  });
+
+  // ── /myid — returns the caller's Telegram chat ID ──────────
+  // Useful for setting OWNER_CHAT_ID in Railway env vars.
+  bot.command('myid', async (ctx) => {
+    await ctx.reply(`Your Telegram chat ID: \`${ctx.from.id}\``, { parse_mode: 'Markdown' });
   });
 
   // ── pre_checkout_query ─────────────────────────────────────
@@ -81,13 +85,22 @@ export function createBot(token, frontendUrl) {
     // ── Notify owner ──────────────────────────────────────────
     const ownerChatId = process.env.OWNER_CHAT_ID;
     if (ownerChatId) {
-      const emoji   = payload.type === 'unlimited' ? '🎉' : payload.type === 'donate' ? '❤️' : '⭐';
-      const product = payload.type === 'unlimited' ? 'Unlimited (300 ⭐)' : payload.type === 'donate' ? 'Donation (50 ⭐)' : 'One Split (75 ⭐)';
-      const text =
-        `${emoji} *Новая покупка!*\n\n` +
-        `👤 ${userName} (${userHandle})\n` +
-        `📦 ${product}\n` +
-        `💫 ${payment.total_amount} Stars`;
+      let text;
+      if (payload.type === 'donate') {
+        // Donation — show actual amount (custom, not hardcoded)
+        text =
+          `⭐ *Новый донат!*\n\n` +
+          `👤 ${userName} (${userHandle})\n` +
+          `💫 ${payment.total_amount} Stars`;
+      } else {
+        const emoji   = payload.type === 'unlimited' ? '🎉' : '⭐';
+        const product = payload.type === 'unlimited' ? 'Unlimited (300 ⭐)' : 'One Split (75 ⭐)';
+        text =
+          `${emoji} *Новая покупка!*\n\n` +
+          `👤 ${userName} (${userHandle})\n` +
+          `📦 ${product}\n` +
+          `💫 ${payment.total_amount} Stars`;
+      }
       try {
         await bot.api.sendMessage(ownerChatId, text, { parse_mode: 'Markdown' });
       } catch (e) {

@@ -33,6 +33,46 @@ app.use((req, res, next) => {
 // Health check (Railway uses this)
 app.get('/', (_req, res) => res.json({ status: 'ok', app: 'pairslice-tma' }));
 
+// ── Admin: test notification ─────────────────────────────────
+// GET /admin/test-notify?secret=<last-8-chars-of-BOT_TOKEN>
+// Sends a test Telegram message to OWNER_CHAT_ID.
+app.get('/admin/test-notify', async (req, res) => {
+  const ownerChatId = process.env.OWNER_CHAT_ID;
+
+  if (!ownerChatId) {
+    return res.status(500).json({
+      error: 'OWNER_CHAT_ID not set',
+      fix: 'Send /myid to @PairSliceBot → add the number to Railway Variables as OWNER_CHAT_ID',
+    });
+  }
+
+  // Auth: last 8 characters of BOT_TOKEN (fast, no extra secrets needed)
+  const expectedSecret = BOT_TOKEN.slice(-8);
+  if (req.query.secret !== expectedSecret) {
+    return res.status(403).json({ error: 'unauthorized — pass ?secret=<last-8-of-BOT_TOKEN>' });
+  }
+
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: ownerChatId,
+        text: '🧪 *PairSlice — тест уведомлений*\n\nЕсли видишь это сообщение, нотификации донатов работают! ✅',
+        parse_mode: 'Markdown',
+      }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      res.json({ success: true, message: 'Notification sent — check your Telegram' });
+    } else {
+      res.status(502).json({ success: false, telegram_error: data.description });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Routes ──────────────────────────────────────────────────
 app.use(invoiceRouter);    // POST /create-invoice
 app.use(statusRouter);     // GET  /user/status
